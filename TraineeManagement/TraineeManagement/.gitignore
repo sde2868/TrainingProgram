@@ -1,0 +1,30 @@
+# Build folders
+bin/
+obj/
+properties/
+
+# User-specific files
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# VS Code
+.vscode/
+
+# Rider / IntelliJ
+.idea/
+
+# Logs
+*.log
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Environment files
+.env
+
+# ASP.NET
+appsettings.Development.json
+appsettings.json
