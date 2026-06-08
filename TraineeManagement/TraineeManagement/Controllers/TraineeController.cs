@@ -14,41 +14,42 @@ namespace TraineeManagement.Controllers
         {
             it = itr;
         }
+        
         [HttpGet]
-        public IActionResult GetAll()
+        public async Task<IActionResult> GetAll([FromQuery] string? search)
         {
-            return Ok(it.GetAll());
+            return Ok(await it.GetAll(search));
         }
 
         [HttpGet("{id}")]
-        public IActionResult GetById(int id)
+        public async Task<IActionResult> GetById(int id)
         {
-            var trainee = it.GetById(id);
-            if(trainee == null)
+            var trainee = await it.GetById(id);
+            if (trainee == null)
             {
-                return NotFound(new { message = "Trainee not found!"});
+                return NotFound(new { message = "Trainee not found!" });
             }
             return Ok(it.ReturnDTO(trainee));
         }
 
         [HttpPost]
-        public IActionResult Create([FromBody] TraineeDTO dto)
+        public async Task<IActionResult> Create([FromBody] TraineeDTO dto)
         {
-            var trainee = it.Create(dto);
+            var trainee = await it.Create(dto);
             return Ok(trainee);
         }
 
         [HttpPut("{id}")]
-        public IActionResult Put(int id, [FromBody] TraineeDTO dto)
+        public async Task<IActionResult> Put(int id, [FromBody] TraineeDTO dto)
         {
-            var trainee = it.Put(id, dto);
+            var trainee = await it.Put(id, dto);
             return Ok(it.ReturnDTO(trainee));
         }
 
         [HttpDelete("{id}")]
-        public IActionResult DeleteById(int id)
+        public async Task<IActionResult> DeleteById(int id)
         {
-            var trainee = it.DeleteById(id);
+            var trainee = await it.DeleteById(id);
             return NoContent();
         }
     }

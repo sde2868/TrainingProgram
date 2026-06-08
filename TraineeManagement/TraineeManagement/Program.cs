@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using TraineeManagement.Models;
 using TraineeManagement.Services;
+using TraineeManagement.Data;
 // dotnet add package Swashbuckle.AspNetCore
 var builder = WebApplication.CreateBuilder(args);
 
@@ -10,7 +11,11 @@ builder.Services.AddControllers();
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
 builder.Services.AddSwaggerGen();
-builder.Services.AddSingleton<ITrainee, TraineeServices>();
+// builder.Services.AddSingleton<ITrainee, TraineeServices>();
+builder.Services.AddScoped<ITrainee, TraineeServices>();
+
+builder.Services.AddDbContext<AppDbContext>(opt =>
+    opt.UseInMemoryDatabase("TraineeDb"));
 // builder.Services.AddDbContext<TodoContext>(opt =>
 //     opt.UseInMemoryDatabase("TodoList"));
 

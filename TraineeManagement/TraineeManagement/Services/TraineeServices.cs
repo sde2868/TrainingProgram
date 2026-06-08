@@ -1,67 +1,110 @@
 using TraineeManagement.Models;
+using Microsoft.EntityFrameworkCore;
+using TraineeManagement.Data;
 
 namespace TraineeManagement.Services
 {
     public class TraineeServices : ITrainee
     {
-        private static List<Trainee> trainees = new List<Trainee>
+        private readonly AppDbContext _context;
+        public TraineeServices(AppDbContext context)
         {
-            new Trainee
+            _context = context;
+
+            // seed data
+            if (!_context.Trainees.Any())
             {
-                id = 1,
-                FirstName = "Zeus",
-                LastName = "Learning",
-                Email = "zeuslearning@email.com",
-                TechStack = new String[] {"C#", "Dotnet"},
-                Status = "Active",
-                CreatedAt = DateTime.UtcNow,
-                UpdatedAt = DateTime.UtcNow
+                _context.Trainees.Add(new Trainee
+                {
+                    id = 1,
+                    FirstName = "Zeus",
+                    LastName = "Learning",
+                    Email = "zeuslearning@email.com",
+                    TechStack = new string[] { "C#", "Dotnet" },
+                    Status = "Active",
+                    CreatedAt = DateTime.UtcNow,
+                    UpdatedAt = DateTime.UtcNow
+                });
+
+                _context.SaveChanges();
             }
-        };
-        public List<Trainee> GetAll()
+        }
+
+        public async Task<List<Trainee>> GetAll(string? search)
         {
+            var trainees = await _context.Trainees.ToListAsync();
+
+            if (!string.IsNullOrWhiteSpace(search))
+            {
+                search = search.ToLower();
+
+                trainees = trainees.Where(t =>
+                    t.FirstName.ToLower().Contains(search) ||
+                    t.LastName.ToLower().Contains(search) ||
+                    t.Email.ToLower().Contains(search) ||
+                    t.TechStack.Any(ts => ts.ToLower().Contains(search))
+                ).ToList();
+            }
+
             return trainees;
         }
-        public Trainee GetById(int id)
+
+        public async Task<Trainee?> GetById(int id)
         {
-            var trainee = trainees.FirstOrDefault(t => t.id == id);
+            var trainee = await _context.Trainees.FirstOrDefaultAsync(t => t.id == id);
             return trainee;
         }
-        public Trainee Create(TraineeDTO dto)
+        
+        public async Task<Trainee?> Create(TraineeDTO dto)
         {
-            var newid = trainees.Any() ? trainees.Max(t => t.id) + 1 : 1;
-            
             var trainee = new Trainee
             {
-                id = newid,
                 FirstName = dto.FirstName,
                 LastName = dto.LastName,
-                TechStack = dto.TechStack,
                 Email = dto.Email,
+                TechStack = dto.TechStack,
                 Status = dto.Status,
                 CreatedAt = DateTime.UtcNow,
                 UpdatedAt = DateTime.UtcNow
             };
-            trainees.Add(trainee);
+
+            _context.Trainees.AddAsync(trainee);
+
+            _context.SaveChangesAsync();
+
             return trainee;
         }
-        public Trainee Put(int id, TraineeDTO dto)
+        
+        public async Task<Trainee?> Put(int id, TraineeDTO dto)
         {
-            var trainee = trainees.FirstOrDefault(t => t.id == id);
-            if(trainee == null) return null;
+            var trainee = await _context.Trainees.FirstOrDefaultAsync(t => t.id == id);
+
+            if (trainee == null)
+                return null;
+
             trainee.FirstName = dto.FirstName;
             trainee.LastName = dto.LastName;
             trainee.Email = dto.Email;
             trainee.Status = dto.Status;
             trainee.TechStack = dto.TechStack;
             trainee.UpdatedAt = DateTime.UtcNow;
+
+            _context.SaveChangesAsync();
+
             return trainee;
         }
-        public Trainee DeleteById(int id)
+
+        public async Task<Trainee?> DeleteById(int id)
         {
-            var trainee = trainees.FirstOrDefault(t => t.id == id);
-            if(trainee == null) return null;
-            trainees.Remove(trainee);
+            var trainee = await _context.Trainees.FirstOrDefaultAsync(t => t.id == id);
+
+            if (trainee == null)
+                return null;
+
+            _context.Trainees.Remove(trainee);
+
+            _context.SaveChangesAsync();
+
             return trainee;
         }
 
