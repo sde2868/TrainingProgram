@@ -154,3 +154,41 @@ Use correct responses:
 Use built-in logging:
 ILogger<T>
 Helps debug issues in production
+---
+
+## MySql Migration
+1. Install mysql-server on WSL-cli
+```bash
+sudo apt update && sudo apt install mysql-server -y
+sudo service mysql start
+sudo service mysql status
+sudo mysql
+mysql -u root -p
+```
+
+2. Update Connection String in appsettings.json
+```json
+"ConnectionStrings": {
+    "DefaultConnection": "server=localhost;port=3306;database=trainee_management_db;user=root;password=your_password;"
+},
+```
+
+3. Remove unimportant packages and Install required packages
+```bash
+dotnet clean
+dotnet remove package Microsoft.EntityFrameworkCore
+dotnet remove package Microsoft.EntityFrameworkCore.InMemory
+dotnet remove package Microsoft.EntityFrameworkCore.Tools
+dotnet remove package Microsoft.EntityFrameworkCore.Design
+dotnet remove package Microsoft.EntityFrameworkCore.Relational
+
+dotnet clean
+dotnet add package Pomelo.EntityFrameworkCore.MySql --version 9.0.0
+dotnet add package Microsoft.EntityFrameworkCore --version 9.0.0
+dotnet add package Microsoft.EntityFrameworkCore.Tools --version 9.0.0
+dotnet add package Microsoft.EntityFrameworkCore.SqlServer --version 9.0.0
+dotnet add package Microsoft.EntityFrameworkCore.Design --version 9.0.0
+dotnet add package Pomelo.EntityFrameworkCore.MySql --version 9.0.0
+dotnet tool install --global dotnet-ef
+dotnet tool update --global dotnet-ef
+```
