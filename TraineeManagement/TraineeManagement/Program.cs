@@ -13,8 +13,13 @@ builder.Services.AddSwaggerGen();
 // builder.Services.AddSingleton<ITrainee, TraineeServices>();
 builder.Services.AddScoped<ITrainee, TraineeServices>();
 
-builder.Services.AddDbContext<AppDbContext>(opt =>
-    opt.UseInMemoryDatabase("TraineeDb"));
+
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+ 
+builder.Services.AddDbContext<AppDbContext>(options =>
+    options.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString)));
+// builder.Services.AddDbContext<AppDbContext>(opt =>
+//     opt.UseInMemoryDatabase("TraineeDb"));
 // builder.Services.AddDbContext<TodoContext>(opt =>
 //     opt.UseInMemoryDatabase("TodoList"));
 
