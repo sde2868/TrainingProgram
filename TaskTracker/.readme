@@ -16,19 +16,14 @@
 1. Download the project zip.
 2. Extract the files.
 3. Double click the html file to open it in browser.
-4. Write text in the input area and press "Add Task" button to add a task to the list.
+4. Write task name (necessary) and description in the input area and press "Add Task" button to add a task to the list.
 5. Click the checkbox to mark a task as completed.
 6. Click the delete button to delete a task.
 
 ## Challenges Faced
 1. Had to revise core HTML, CSS, Javascript because there were restrictions in using external packages and libraries from the internet.
-2. Couldn't implement "clearing the text input area after add task button is pressed".
-3. Had debugging issues even if one of the mistake was as small as "an extra 's' in a variable name"
+2. Making the frontend responsive.
 
 ## Improvements Planned
 With the current tech stack:
-1. More responsive css.
-2. Dark mode and light mode toggle.
-3. Use icons instead of buttons an enhanced UX.
-4. Add date and time to a task.
-5. Task structure containing 1 line title and detailed description in the form of steps, i.e., sub list in list items.
+1. Use icons instead of buttons an enhanced UX.

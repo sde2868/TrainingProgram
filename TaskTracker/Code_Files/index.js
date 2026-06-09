@@ -1,15 +1,48 @@
-// Fetch all elements needed for the functionality to work
-const taskInput = document.getElementById("taskInput");
+// Application state
+let tasks = [];
+
+// Fetch all DOM elements needed
+const taskNameInput = document.getElementById("taskNameInput");
+const taskDescriptionInput = document.getElementById("taskDescriptionInput");
 const addTaskBtn = document.getElementById("addTaskBtn");
 const taskList = document.getElementById("taskList");
 const totalTasksSpan = document.getElementById("totalTasks");
 const completedTasksSpan = document.getElementById("completedTasks");
 
-// Making add task button listen to click and execute add task function
-addTaskBtn.addEventListener("click", addTask);
+// Task Model
+class Task {
+    constructor(name, description) {
+        this.id = Date.now();
+        this.name = name;
+        this.description = description;
+        this.completed = false;
+        this.createdOn = new Date()
+            .toLocaleString("en-IN", {
+                weekday: "long",
+                year: "numeric",
+                month: "long",
+                day: "numeric",
+                hour: "numeric",
+                minute: "2-digit",
+                second: "2-digit"
+            });
+        ;
+    }
+}
 
+function saveTasks() {
+    localStorage.setItem("tasks", JSON.stringify(tasks));
+}
 
-function updateTasksCount() {
+function loadTasks() {
+    const storedTasks = localStorage.getItem("tasks");
+
+    if (storedTasks) {
+        tasks = JSON.parse(storedTasks);
+    }
+}
+
+function updateTaskCount() {
     const totalTasks = taskList.children.length;
 
     // Completed tasks = number of ticked checkboxes
@@ -20,45 +53,97 @@ function updateTasksCount() {
     completedTasksSpan.textContent = completedTasks;
 }
 
-function addTask() {
-    // fetch the text from the input area
-    const taskText = taskInput.value.trim();
-    if(taskText == "") return;
+function renderTasks() {
+    // Clear everything
+    taskList.innerHTML = "";
 
-    // create a list item
-    const li = document.createElement("li");
+    // Render every task
+    tasks.forEach((task) => {
+        const li = document.createElement("li");
 
-    // create a checkbox for the list item
-    const checkbox = document.createElement("input");
-    checkbox.type = "checkbox";
+        // Checkbox
+        const checkbox = document.createElement("input");
+        checkbox.type = "checkbox";
+        checkbox.checked = task.completed;
 
-    // create a span for list item description
-    const span = document.createElement("span");
-    span.textContent = taskText;
+        // Task name
+        const nameSpan = document.createElement("span");
+        nameSpan.textContent = task.name;
+        nameSpan.classList.add("taskName");
 
-    // create delete button for the list item
-    const deletebButton = document.createElement("button");
-    deletebButton.textContent = "Delete Task";
-    deletebButton.classList.add("delbtn");
+        // Task Description
+        const descriptionSpan = document.createElement("span");
+        descriptionSpan.textContent = task.description;
+        descriptionSpan.classList.add("taskDescription");
 
-    // add functionality to checkbox
-    checkbox.addEventListener("change", function () {
-        span.classList.toggle("completed");
-        updateTasksCount();
-        checkbox.disabled = true;
+        // Creation Date
+        const dateInfo = document.createElement("span");
+        dateInfo.textContent = task.createdOn;
+        dateInfo.classList.add("taskDate");
+
+        // Overall Li Text
+        const taskText = document.createElement("p");
+        taskText.innerHTML = `${nameSpan.outerHTML}<br>(${dateInfo.outerHTML})<br>${descriptionSpan.outerHTML}`;
+        taskText.classList.add("taskContent");
+
+        if (task.completed) {
+            taskText.classList.add("completed");
+        }
+
+
+        // Delete button
+        const deleteButton = document.createElement("button");
+        deleteButton.textContent = "Delete Task";
+        deleteButton.classList.add("delbtn");
+
+        // Events
+        // Toggle completion
+        checkbox.addEventListener("change", () => {
+            task.completed = checkbox.checked;
+
+            saveTasks();
+            renderTasks();
+        });
+
+        // Delete task
+        deleteButton.addEventListener("click", () => {
+            tasks = tasks.filter((t) => t.id !== task.id);
+
+            saveTasks();
+            renderTasks();
+        });
+
+        // Append elements
+        li.appendChild(checkbox);
+        li.appendChild(taskText);
+        li.appendChild(deleteButton);
+
+        taskList.appendChild(li);
     });
 
-    // add functionality to delete button
-    deletebButton.addEventListener("click", function () {
-        li.remove();
-        updateTasksCount();
-    });
-
-    // append all of them together to the task list when add button is clicked
-    li.appendChild(checkbox);
-    li.appendChild(span);
-    li.appendChild(deletebButton);
-    taskList.appendChild(li);
-    updateTasksCount();
-    taskInput.value("");
+    updateTaskCount();
 }
+
+function addTask() {
+    const taskNameText = taskNameInput.value.trim();
+    if (taskNameText === "") return;
+
+    const taskDescriptionText = taskDescriptionInput.value.trim();
+    const newTask = new Task(taskNameText, taskDescriptionText);
+
+    tasks.push(newTask);
+
+    saveTasks();
+    renderTasks();
+
+    taskNameInput.value = "";
+    taskDescriptionInput.value = "";
+}
+
+function init() {
+    loadTasks();
+    renderTasks();
+
+    addTaskBtn.addEventListener("click", addTask);
+}
+init();
