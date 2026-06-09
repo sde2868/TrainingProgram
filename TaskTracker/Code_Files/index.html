@@ -1,35 +1,51 @@
 <!DOCTYPE html>
 <html lang="en">
-    <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Task Tracker</title>
-        <link rel="stylesheet" href="index.css">
-    </head>
-    <body>
-        <header>
-            <h1>Task Tracker</h1>
-        </header>
 
-        <main>
-            <!-- Div containing the main interface -->
-            <div id="mainDiv">
-                <!-- Div containing the textarea and add button to add task -->
-                <div id="addtaskdiv">
-                    <input type="text" id="taskInput" placeholder="Enter task description"></input>
-                    <button id="addTaskBtn">Add Task</button>
-                </div>
-                <!-- Div containing the task info and task list -->
-                <div id="tasklistdiv">
-                    <!-- Div showing the number of tasks completed, of total tasks -->
-                    <div id="infoDiv">
-                        <p><span id="completedTasks">0</span> of <span id="totalTasks">0</span> completed</p>
-                    </div>
-                    <ul id="taskList"></ul>
-                </div>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Task Tracker</title>
+    <link rel="stylesheet" href="index.css">
+</head>
+
+<body>
+    <header>
+        <h1>Task Tracker</h1>
+    </header>
+
+    <main>
+        <div id="mainDiv">
+            <!-- Add Task Section -->
+            <div id="addtaskdiv">
+                <input
+                    type="text"
+                    id="taskNameInput"
+                    placeholder="Enter task name"
+                >
+                <textarea
+                    id="taskDescriptionInput"
+                    placeholder="Enter task description"
+                ></textarea>
+                <button id="addTaskBtn">
+                    Add Task
+                </button>
             </div>
-        </main>
 
-        <script src="index.js"></script>
-    </body>
+            <!-- Task List Section -->
+            <div id="tasklistdiv">
+                <div id="infoDiv">
+                    <p>
+                        <span id="completedTasks">0</span>
+                        of
+                        <span id="totalTasks">0</span>
+                        completed
+                    </p>
+                </div>
+                <ul id="taskList"></ul>
+            </div>
+        </div>
+    </main>
+    <script src="index.js"></script>
+</body>
+
 </html>
