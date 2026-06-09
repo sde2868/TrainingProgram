@@ -125,4 +125,32 @@ DELETE /api/trainee/2
 # Known Limitations
 - No Auth (Both Authentication and Authorization)
 - Temporary (In-memory) Storage, data reset on refresh / reset
-- No exception handling
+
+---
+### Read (from review)
+
+2. HealthCheck controller: Checks health of service + health of dependent service
+In our case we are using in-memory database but we generally check health of SQL, Redis and any other dependent items too as apis are dependent on SQL too.
+
+8. Ideally we have authorization and authentication whenever user hits api : Read about it that how it happens in dotnet via middlewares.
+Authentication (who you are)
+Authorization (what you can access)
+
+9.Read about Dependency Injection & Lifetimes
+Understand basic lifetimes:
+Scoped → per request (most used)
+Singleton → one instance always
+Used for services, DbContext
+
+11. HTTP Status Codes
+Use correct responses:
+200 → success
+201 → created
+204 → no content
+400 → bad request
+404 → not found
+
+12. Read about how Logging should be done.
+Use built-in logging:
+ILogger<T>
+Helps debug issues in production

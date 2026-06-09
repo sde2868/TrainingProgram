@@ -1,4 +1,3 @@
-using System.ComponentModel.DataAnnotations;
 using Microsoft.AspNetCore.Mvc;
 using TraineeManagement.Models;
 using TraineeManagement.Services;
@@ -7,14 +6,10 @@ namespace TraineeManagement.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    public class TraineeController : ControllerBase
+    public class TraineeController(ITrainee itr) : ControllerBase
     {
-        private readonly ITrainee it;
-        public TraineeController(ITrainee itr)
-        {
-            it = itr;
-        }
-        
+        private readonly ITrainee it = itr;
+
         [HttpGet]
         public async Task<IActionResult> GetAll([FromQuery] string? search)
         {
@@ -24,7 +19,7 @@ namespace TraineeManagement.Controllers
         [HttpGet("{id}")]
         public async Task<IActionResult> GetById(int id)
         {
-            var trainee = await it.GetById(id);
+            Trainee? trainee = await it.GetById(id);
             if (trainee == null)
             {
                 return NotFound(new { message = "Trainee not found!" });
@@ -35,21 +30,21 @@ namespace TraineeManagement.Controllers
         [HttpPost]
         public async Task<IActionResult> Create([FromBody] TraineeDTO dto)
         {
-            var trainee = await it.Create(dto);
+            Trainee trainee = await it.Create(dto);
             return Ok(trainee);
         }
 
         [HttpPut("{id}")]
         public async Task<IActionResult> Put(int id, [FromBody] TraineeDTO dto)
         {
-            var trainee = await it.Put(id, dto);
+            Trainee? trainee = await it.Put(id, dto);
             return Ok(it.ReturnDTO(trainee));
         }
 
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteById(int id)
         {
-            var trainee = await it.DeleteById(id);
+            Trainee? trainee = await it.DeleteById(id);
             return NoContent();
         }
     }

@@ -1,5 +1,4 @@
 using Microsoft.EntityFrameworkCore;
-using TraineeManagement.Models;
 using TraineeManagement.Services;
 using TraineeManagement.Data;
 // dotnet add package Swashbuckle.AspNetCore
