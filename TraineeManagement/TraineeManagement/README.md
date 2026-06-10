@@ -192,3 +192,36 @@ dotnet add package Pomelo.EntityFrameworkCore.MySql --version 9.0.0
 dotnet tool install --global dotnet-ef
 dotnet tool update --global dotnet-ef
 ```
+4. Migration
+```bash
+dotnet ef migrations add InitialCreate
+dotnet ef update database
+```
+
+5. Verify
+```bash
+mysql -u root -p
+# Add the password that you set
+```
+```mysql
+<!-- Inside mysql server cli -->
+show databases;
+use trainee_management_db;
+show tables;
+select * from Trainees;
+```
+
+## User Model Creation and Login API using BCrypt password hashing & JWT bearer header
+1. Add required packages
+```bash
+dotnet add package BCrypt.Net-Next
+dotnet add package Microsoft.AspNetCore.Authentication.JwtBearer
+```
+
+2. Create User Model, and Login API in User Controller and Migrate
+```bash
+dotnet ef migrations add UserMigration
+dotnet ef update database
+```
+
+3. Verify Using Swagger UI
