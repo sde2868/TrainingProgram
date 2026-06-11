@@ -48,9 +48,8 @@ namespace TraineeManagement.Migrations
                         .HasMaxLength(50)
                         .HasColumnType("varchar(50)");
 
-                    b.Property<string>("Status")
-                        .IsRequired()
-                        .HasColumnType("longtext");
+                    b.Property<int>("Status")
+                        .HasColumnType("int");
 
                     b.PrimitiveCollection<string>("TechStack")
                         .IsRequired()
@@ -66,27 +65,42 @@ namespace TraineeManagement.Migrations
 
             modelBuilder.Entity("TraineeManagement.Models.User", b =>
                 {
-                    b.Property<int>("Id").ValueGeneratedOnAdd().HasColumnType("int");
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
 
                     MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
 
-                    b.Property<DateTime>("CreatedAt").HasColumnType("datetime(6)");
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime(6)");
 
-                    b.Property<string>("Email").IsRequired().HasMaxLength(50).HasColumnType("varchar(50)");
+                    b.Property<string>("Email")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("varchar(50)");
 
-                    b.Property<string>("Password").IsRequired().HasColumnType("longtext");
+                    b.Property<string>("Password")
+                        .IsRequired()
+                        .HasColumnType("longtext");
 
-                    b.Property<int>("Role").HasColumnType("int");
+                    b.Property<int>("Role")
+                        .HasColumnType("int");
 
-                    b.Property<DateTime>("UpdatedAt").HasColumnType("datetime(6)");
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("datetime(6)");
 
-                    b.Property<string>("UserName").IsRequired().HasMaxLength(50).HasColumnType("varchar(50)");
+                    b.Property<string>("UserName")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("varchar(50)");
 
                     b.HasKey("Id");
 
-                    b.HasIndex("Email").IsUnique();
+                    b.HasIndex("Email")
+                        .IsUnique();
 
-                    b.HasIndex("UserName").IsUnique();
+                    b.HasIndex("UserName")
+                        .IsUnique();
 
                     b.ToTable("Users");
 
@@ -94,9 +108,9 @@ namespace TraineeManagement.Migrations
                         new
                         {
                             Id = 1,
-                            CreatedAt = new DateTime(2026, 6, 10, 10, 12, 53, 385, DateTimeKind.Utc).AddTicks(67),
+                            CreatedAt = new DateTime(2026, 6, 10, 13, 36, 7, 628, DateTimeKind.Utc).AddTicks(1054),
                             Email = "admin@zeuslearning.com",
-                            Password = "$2a$11$6XOJDJyyiIrjv4Jd4MWwA.iaRnChhF2S6bY0zzQjwHs6K5p.hOu9e",
+                            Password = "$2a$11$.qc0EzVbJpbWzmnNWNylTetI/D2FNQf8z6tlEUOWEj/oImsJjVZje",
                             Role = 0,
                             UpdatedAt = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
                             UserName = "Admin_Zeus_Learning"

@@ -12,12 +12,13 @@ namespace TraineeManagement.Services
     public class UserServices : IUser
     {
         private readonly AppDbContext _context;
-        public UserServices(AppDbContext context)
+        private readonly ILogger<UserServices> _logger;
+        public UserServices(AppDbContext context, ILogger<UserServices> logger)
         {
             try
             {
                 _context = context;
-
+                _logger = logger;
                 // // seed data
                 // if (!_context.Users.Any())
                 // {
@@ -47,13 +48,26 @@ namespace TraineeManagement.Services
                 if (user == null)
                     return null;
 
-                bool validPassword = BCrypt.Net.BCrypt.Verify( password, user.Password );
-                if (!validPassword) return null;
+                bool validPassword = BCrypt.Net.BCrypt.Verify(password, user.Password);
+                if (!validPassword)
+                {
+                    _logger.LogInformation("Invalid Password. UserName: {UserName}", username);
+                    return null;
+                }
+
+                _logger.LogInformation(
+                    "User logged in successfully. UserName: {UserName}",
+                    user.UserName
+                );
 
                 return user;
             }
             catch (Exception ex)
             {
+                _logger.LogWarning(
+                    "Failed login attempt. UserName: {UserName}",
+                    username
+                );
                 throw new Exception("Error during login.", ex);
             }
         }

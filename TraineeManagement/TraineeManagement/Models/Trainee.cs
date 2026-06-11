@@ -3,6 +3,13 @@ using System.ComponentModel.DataAnnotations;
 
 namespace TraineeManagement.Models;
 
+public enum TraineeStatus
+{
+    Active,
+    Busy,
+    Offline
+}
+
 public class Trainee
 {
     [Required(ErrorMessage = "Id is required!")]
@@ -23,8 +30,7 @@ public class Trainee
     [Required]
     public string[] TechStack { get; set; }
     [Required]
-    [AllowedValues("Active", "Busy", "Offline", ErrorMessage = "Only \"Active\", \"Busy\", and \"Offline\" are allowed!")]
-    public string Status { get; set; }
+    public TraineeStatus Status { get; set; }
     public DateTime CreatedAt { get; set; }
     public DateTime UpdatedAt { get; set; }
 

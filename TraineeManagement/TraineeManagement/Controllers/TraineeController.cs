@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using TraineeManagement.Models;
 using TraineeManagement.Services;
+using Microsoft.AspNetCore.Authorization;
 
 namespace TraineeManagement.Controllers
 {
@@ -11,12 +12,22 @@ namespace TraineeManagement.Controllers
         private readonly ITrainee it = itr;
 
         [HttpGet]
-        public async Task<IActionResult> GetAll([FromQuery] string? search)
+        [Authorize]
+        public async Task<IActionResult> GetTrainees([FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10, [FromQuery] string? search = null, [FromQuery] TraineeStatus? status = null)
         {
-            return Ok(await it.GetAll(search));
+            var result = await it.GetTraineesAsync( pageNumber, pageSize, search, status);
+            return Ok(result);
         }
 
+        // [HttpGet]
+        // [Authorize]
+        // public async Task<IActionResult> GetAll([FromQuery] string? search)
+        // {
+        //     return Ok(await it.GetAll(search));
+        // }
+
         [HttpGet("{id}")]
+        [Authorize]
         public async Task<IActionResult> GetById(int id)
         {
             Trainee? trainee = await it.GetById(id);
@@ -28,6 +39,7 @@ namespace TraineeManagement.Controllers
         }
 
         [HttpPost]
+        [Authorize]
         public async Task<IActionResult> Create([FromBody] TraineeDTO dto)
         {
             Trainee trainee = await it.Create(dto);
@@ -35,6 +47,7 @@ namespace TraineeManagement.Controllers
         }
 
         [HttpPut("{id}")]
+        [Authorize]
         public async Task<IActionResult> Put(int id, [FromBody] TraineeDTO dto)
         {
             Trainee? trainee = await it.Put(id, dto);
@@ -42,6 +55,7 @@ namespace TraineeManagement.Controllers
         }
 
         [HttpDelete("{id}")]
+        [Authorize]
         public async Task<IActionResult> DeleteById(int id)
         {
             Trainee? trainee = await it.DeleteById(id);

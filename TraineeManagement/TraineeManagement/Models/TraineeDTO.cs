@@ -19,7 +19,6 @@ namespace TraineeManagement.Models
         [Required]
         public string[] TechStack { get; set; }
         [Required]
-        [AllowedValues("Active", "Busy", "Offline", ErrorMessage = "Only \"Active\", \"Busy\", and \"Offline\" are allowed!")]
-        public string Status { get; set; }
+        public TraineeStatus Status { get; set; }
     }
 }

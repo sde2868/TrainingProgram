@@ -12,8 +12,8 @@ using TraineeManagement.Data;
 namespace TraineeManagement.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20260610101254_UserMigrationCorrection")]
-    partial class UserMigrationCorrection
+    [Migration("20260610133608_InitialCreate")]
+    partial class InitialCreate
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -51,9 +51,8 @@ namespace TraineeManagement.Migrations
                         .HasMaxLength(50)
                         .HasColumnType("varchar(50)");
 
-                    b.Property<string>("Status")
-                        .IsRequired()
-                        .HasColumnType("longtext");
+                    b.Property<int>("Status")
+                        .HasColumnType("int");
 
                     b.PrimitiveCollection<string>("TechStack")
                         .IsRequired()
@@ -112,9 +111,9 @@ namespace TraineeManagement.Migrations
                         new
                         {
                             Id = 1,
-                            CreatedAt = new DateTime(2026, 6, 10, 10, 12, 53, 385, DateTimeKind.Utc).AddTicks(67),
+                            CreatedAt = new DateTime(2026, 6, 10, 13, 36, 7, 628, DateTimeKind.Utc).AddTicks(1054),
                             Email = "admin@zeuslearning.com",
-                            Password = "$2a$11$6XOJDJyyiIrjv4Jd4MWwA.iaRnChhF2S6bY0zzQjwHs6K5p.hOu9e",
+                            Password = "$2a$11$.qc0EzVbJpbWzmnNWNylTetI/D2FNQf8z6tlEUOWEj/oImsJjVZje",
                             Role = 0,
                             UpdatedAt = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
                             UserName = "Admin_Zeus_Learning"
