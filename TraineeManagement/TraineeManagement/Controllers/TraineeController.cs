@@ -19,13 +19,6 @@ namespace TraineeManagement.Controllers
             return Ok(result);
         }
 
-        // [HttpGet]
-        // [Authorize]
-        // public async Task<IActionResult> GetAll([FromQuery] string? search)
-        // {
-        //     return Ok(await it.GetAll(search));
-        // }
-
         [HttpGet("{id}")]
         [Authorize]
         public async Task<IActionResult> GetById(int id)

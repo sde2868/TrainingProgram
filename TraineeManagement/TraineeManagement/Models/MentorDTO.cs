@@ -2,18 +2,8 @@ using System.ComponentModel.DataAnnotations;
 
 namespace TraineeManagement.Models;
 
-public enum TraineeStatus
+public class MentorDTO
 {
-    Active,
-    Busy,
-    Offline
-}
-
-public class Trainee
-{
-    [Required(ErrorMessage = "Id is required!")]
-    [Range(1, 1000, ErrorMessage = "One organisation can have maximum 1000 trainees!")]
-    public int id { get; set; }
     [Required(ErrorMessage = "FirstName is required!")]
     [StringLength(50, MinimumLength = 3)]
     [RegularExpression(@"^[a-zA-Z]+$", ErrorMessage = "FirstName should contain only letters!")]
@@ -27,10 +17,7 @@ public class Trainee
     [EmailAddress]
     public string Email { get; set; }
     [Required]
-    public string[] TechStack { get; set; }
+    public string[] Expertise { get; set; }
     [Required]
-    public TraineeStatus Status { get; set; }
-    public DateTime CreatedAt { get; set; }
-    public DateTime UpdatedAt { get; set; }
-
+    public MentorStatus Status { get; set; }
 }

@@ -2,11 +2,6 @@ using TraineeManagement.Models;
 using Microsoft.EntityFrameworkCore;
 using TraineeManagement.Data;
 
-using Microsoft.IdentityModel.Tokens;
-using System.IdentityModel.Tokens.Jwt;
-using System.Security.Claims;
-using System.Text;
-
 namespace TraineeManagement.Services
 {
     public class UserServices : IUser
@@ -19,20 +14,6 @@ namespace TraineeManagement.Services
             {
                 _context = context;
                 _logger = logger;
-                // // seed data
-                // if (!_context.Users.Any())
-                // {
-                //     _context.Users.Add(new User
-                //     {
-                //         Id = 1,
-                //         UserName = "Zeus_Learning",
-                //         Email = "admin@zeuslearning.com",
-                //         Role = ,
-                //         CreatedAt = DateTime.UtcNow,
-                //         UpdatedAt = DateTime.UtcNow
-                //     });
-                //     _context.SaveChanges();
-                // }
             }
             catch (Exception ex)
             {

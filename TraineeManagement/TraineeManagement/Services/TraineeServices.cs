@@ -101,32 +101,6 @@ namespace TraineeManagement.Services
             }
         }
 
-        // public async Task<List<Trainee>> GetAll(string? search)
-        // {
-        //     try
-        //     {
-        //         List<Trainee> trainees = await _context.Trainees.ToListAsync();
-
-        //         if (!string.IsNullOrWhiteSpace(search))
-        //         {
-        //             search = search.ToLower();
-
-        //             trainees = trainees.Where(t =>
-        //                 t.FirstName.ToLower().Contains(search) ||
-        //                 t.LastName.ToLower().Contains(search) ||
-        //                 t.Email.ToLower().Contains(search) ||
-        //                 t.TechStack.Any(ts => ts.ToLower().Contains(search))
-        //             ).ToList();
-        //         }
-
-        //         return trainees;
-        //     }
-        //     catch (Exception ex)
-        //     {
-        //         throw new Exception($"Error while deleting trainees.", ex);
-        //     }
-        // }
-
         public async Task<Trainee?> GetById(int id)
         {
             try

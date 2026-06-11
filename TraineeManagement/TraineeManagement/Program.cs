@@ -49,6 +49,9 @@ builder.Services.AddSwaggerGen(options =>
 // builder.Services.AddSingleton<ITrainee, TraineeServices>();
 builder.Services.AddScoped<ITrainee, TraineeServices>();
 builder.Services.AddScoped<IUser, UserServices>();
+builder.Services.AddScoped<IMentor, MentorServices>();
+builder.Services.AddScoped<ILearningTask, LearningTaskServices>();
+
 builder.Services.AddControllers()
     .AddJsonOptions(options =>
     {
@@ -61,8 +64,6 @@ builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString)));
 // builder.Services.AddDbContext<AppDbContext>(opt =>
 //     opt.UseInMemoryDatabase("TraineeDb"));
-// builder.Services.AddDbContext<TodoContext>(opt =>
-//     opt.UseInMemoryDatabase("TodoList"));
 
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>

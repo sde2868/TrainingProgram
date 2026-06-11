@@ -1,5 +1,4 @@
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Configuration;
 using TraineeManagement.Models;
 using TraineeManagement.Services;
 
