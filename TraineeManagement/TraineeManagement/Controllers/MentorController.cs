@@ -6,7 +6,7 @@ using Microsoft.AspNetCore.Authorization;
 namespace TraineeManagement.Controllers
 {
     [ApiController]
-    [Route("api/[controller]")]
+    [Route("api/mentors")]
     public class MentorController(IMentor itm) : ControllerBase
     {
         private readonly IMentor it = itm;

@@ -6,32 +6,29 @@ using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
+using Microsoft.AspNetCore.Authorization;
 
 namespace TraineeManagement.Controllers
 {
     [ApiController]
-    [Route("/api/[controller]")]
+    [Route("api/users")]
 
-    public class UserController(IUser iusr, IConfiguration config) : ControllerBase
+    public class UserController(IUser iusr, IConfiguration config, ILogger<UserController> logger) : ControllerBase
     {
         private readonly IUser iuser = iusr;
         private readonly IConfiguration _config = config;
+        private readonly ILogger<UserController> _logger = logger;
 
-        [HttpPost("login")]
+        [HttpPost("/api/auth/login")]
         public async Task<IActionResult> Login([FromBody] LoginDTO dto)
         {
             try
             {
-                User? user = await iuser.Login(
-                    dto.Username,
-                    dto.Password
-                );
+                User? user = await iuser.Login( dto.Username, dto.Password );
                 if (user == null)
                 {
-                    return Unauthorized(new
-                    {
-                        message = "Invalid username or password"
-                    });
+                    _logger.LogWarning($"User with username {dto.Username} not found!");
+                    return Unauthorized(new { message = "Invalid username or password" });
                 }
 
                 List<Claim> claims =
@@ -60,9 +57,9 @@ namespace TraineeManagement.Controllers
                     signingCredentials: creds
                 );
 
-                string jwt = new JwtSecurityTokenHandler()
-                    .WriteToken(token);
+                string jwt = new JwtSecurityTokenHandler().WriteToken(token);
 
+                _logger.LogInformation($"User {user.UserName} ({user.Role}) logged in successfully! (Expires in 1 hour)");
                 return Ok(new
                 {
                     token = jwt,
@@ -77,20 +74,20 @@ namespace TraineeManagement.Controllers
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new
-                {
-                    message = ex.Message
-                });
+                _logger.LogWarning($"Login failed for user {dto.Username}");
+                throw new Exception("Error during login.", ex);
             }
         }
 
         [HttpGet]
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> GetAll([FromQuery] string? search)
         {
             return Ok(await iuser.GetAll(search));
         }
 
         [HttpGet("{id}")]
+        [Authorize]
         public async Task<IActionResult> GetById(int id)
         {
             User? user = await iuser.GetById(id);
@@ -102,6 +99,7 @@ namespace TraineeManagement.Controllers
         }
 
         [HttpPost]
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> Create([FromBody] UserDTO dto)
         {
             User user = await iuser.Create(dto);
@@ -109,6 +107,7 @@ namespace TraineeManagement.Controllers
         }
 
         [HttpPut("{id}")]
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> Put(int id, [FromBody] UserDTO dto)
         {
             User? user = await iuser.Put(id, dto);
@@ -116,6 +115,7 @@ namespace TraineeManagement.Controllers
         }
 
         [HttpDelete("{id}")]
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> DeleteById(int id)
         {
             User? user = await iuser.DeleteById(id);

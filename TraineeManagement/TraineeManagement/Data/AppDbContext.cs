@@ -13,6 +13,9 @@ namespace TraineeManagement.Data
         public DbSet<User> Users { get; set; }
         public DbSet<Mentor> Mentors { get; set; }
         public DbSet<LearningTask> LearningTasks { get; set; }
+        public DbSet<TaskAssignment> TaskAssignments { get; set; }
+        public DbSet<TaskSubmission> TaskSubmissions { get; set; }
+        public DbSet<Review> Reviews { get; set; }
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
@@ -33,6 +36,41 @@ namespace TraineeManagement.Data
                 Role = (Models.UserRole)UserRole.Admin,
                 CreatedAt = DateTime.UtcNow
             });
+
+            // TaskAssignment relationships
+            modelBuilder.Entity<TaskAssignment>()
+                .HasOne(t => t.Trainee)
+                .WithMany()
+                .HasForeignKey(t => t.TraineeId);
+
+            modelBuilder.Entity<TaskAssignment>()
+                .HasOne(t => t.Mentor)
+                .WithMany()
+                .HasForeignKey(t => t.MentorId);
+
+            modelBuilder.Entity<TaskAssignment>()
+                .HasOne(t => t.LearningTask)
+                .WithMany()
+                .HasForeignKey(t => t.LearningTaskId);
+
+
+            // TaskSubmission -> TaskAssignment
+            modelBuilder.Entity<TaskSubmission>()
+                .HasOne(s => s.TaskAssignment)
+                .WithMany(t => t.Submissions)
+                .HasForeignKey(s => s.TaskAssignmentId);
+
+            // Review -> TaskSubmission
+            modelBuilder.Entity<Review>()
+                .HasOne(r => r.Submission)
+                .WithMany(s => s.Reviews)
+                .HasForeignKey(r => r.TaskSubmissionId);
+
+            // Review -> Mentor
+            modelBuilder.Entity<Review>()
+                .HasOne(r => r.Mentor)
+                .WithMany()
+                .HasForeignKey(r => r.MentorId);
         }
     }
 }

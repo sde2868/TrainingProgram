@@ -17,7 +17,7 @@ namespace TraineeManagement.Models
         [EmailAddress]
         public string Email { get; set; }
         [Required]
-        public string[] TechStack { get; set; }
+        public string[] TechStack { get; set; } = Array.Empty<string>();
         [Required]
         public TraineeStatus Status { get; set; }
     }
