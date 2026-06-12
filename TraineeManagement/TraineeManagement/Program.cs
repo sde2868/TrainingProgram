@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using System.Text.Json.Serialization;
 using TraineeManagement.Services;
 using TraineeManagement.Data;
+using TraineeManagement.Middlewares;
 
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
@@ -51,6 +52,9 @@ builder.Services.AddScoped<ITrainee, TraineeServices>();
 builder.Services.AddScoped<IUser, UserServices>();
 builder.Services.AddScoped<IMentor, MentorServices>();
 builder.Services.AddScoped<ILearningTask, LearningTaskServices>();
+builder.Services.AddScoped<ITaskAssignment, TaskAssignmentServices>();
+builder.Services.AddScoped<ITaskSubmission, TaskSubmissionServices>();
+builder.Services.AddScoped<IReview, ReviewServices>();
 
 builder.Services.AddControllers()
     .AddJsonOptions(options =>
@@ -102,6 +106,12 @@ builder.Services.AddCors(options =>
 
 var app = builder.Build();
 
+if (!app.Environment.IsDevelopment())
+{
+    // app.UseExceptionHandler("/Error"); // Use when separate /Error page is needed when rendering views
+    app.UseHsts();
+}
+
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
@@ -110,6 +120,8 @@ if (app.Environment.IsDevelopment())
     app.UseSwagger();
     app.UseSwaggerUI();
 }
+
+app.UseMiddleware<ExceptionMiddleware>();
 
 app.UseCors("AllowFrontend");
 

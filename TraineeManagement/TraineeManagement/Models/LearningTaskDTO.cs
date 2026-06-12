@@ -13,7 +13,7 @@ public class LearningTaskDTO
     [RegularExpression(@"^[a-zA-Z]+$", ErrorMessage = "Description should contain only letters!")]
     public string Description { get; set; }
     [Required]
-    public string[] ExpectedTechStack { get; set; }
+    public string[] ExpectedTechStack { get; set; } = Array.Empty<string>();
     [Required]
     public LearningTaskStatus Status { get; set; }
     [Required]

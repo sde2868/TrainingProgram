@@ -6,7 +6,7 @@ using Microsoft.AspNetCore.Authorization;
 namespace TraineeManagement.Controllers
 {
     [ApiController]
-    [Route("api/[controller]")]
+    [Route("api/learning-tasks")]
     public class LearningTaskController(ILearningTask itlt) : ControllerBase
     {
         private readonly ILearningTask it = itlt;

@@ -26,7 +26,7 @@ public class Mentor
     [EmailAddress]
     public string Email { get; set; }
     [Required]
-    public string[] Expertise { get; set; }
+    public string[] Expertise { get; set; } = Array.Empty<string>();
     [Required]
     public MentorStatus Status { get; set; }
     public DateTime CreatedAt { get; set; }
