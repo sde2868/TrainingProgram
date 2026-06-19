@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using System.Text.Json.Serialization;
 
 namespace TraineeManagement.Models;
 
@@ -24,4 +25,6 @@ public class TaskSubmission
     // Navigation
     public TaskAssignment TaskAssignment { get; set; }
     public List<Review> Reviews { get; set; }
+    [JsonIgnore]
+    public List<SubmissionFile> Files { get; set; } = new();
 }

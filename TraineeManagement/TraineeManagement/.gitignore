@@ -3,6 +3,9 @@ bin/
 obj/
 properties/
 
+Storage/
+Migrations/
+
 # User-specific files
 *.user
 *.suo
