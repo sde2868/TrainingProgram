@@ -1,5 +1,6 @@
 using System.Net;
 using System.Text.Json;
+using TraineeManagement.Exceptions;
 
 namespace TraineeManagement.Middlewares
 {
@@ -44,6 +45,7 @@ namespace TraineeManagement.Middlewares
                 var response = new
                 {
                     success = false,
+                    statusCode = (int)statusCode,
                     message = GetMessage(ex),
                     // Show detailed error only in development
                     details = _env.IsDevelopment() ? ex.Message : null
@@ -61,17 +63,24 @@ namespace TraineeManagement.Middlewares
                 ArgumentException => HttpStatusCode.BadRequest,
                 UnauthorizedAccessException => HttpStatusCode.Unauthorized,
                 KeyNotFoundException => HttpStatusCode.NotFound,
+                FileNotFoundException => HttpStatusCode.NotFound,
+                FileTooLargeException => HttpStatusCode.RequestEntityTooLarge, // 413
+                InvalidOperationException =>  HttpStatusCode.BadRequest,
                 _ => HttpStatusCode.InternalServerError
             };
         }
 
-        private static string GetMessage(Exception ex)
+        private static string GetMessage(
+            Exception ex)
         {
             return ex switch
             {
                 ArgumentException => ex.Message,
-                UnauthorizedAccessException => "Unauthorized access",
+                InvalidOperationException => ex.Message,
+                UnauthorizedAccessException => "Unauthorized access.",
                 KeyNotFoundException => ex.Message,
+                FileNotFoundException => ex.Message,
+                FileTooLargeException => ex.Message,
                 _ => "An unexpected error occurred. Please try again later."
             };
         }

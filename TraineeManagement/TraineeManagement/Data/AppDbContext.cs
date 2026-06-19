@@ -16,6 +16,7 @@ namespace TraineeManagement.Data
         public DbSet<TaskAssignment> TaskAssignments { get; set; }
         public DbSet<TaskSubmission> TaskSubmissions { get; set; }
         public DbSet<Review> Reviews { get; set; }
+        public DbSet<SubmissionFile> SubmissionFiles { get; set; }
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
@@ -59,6 +60,12 @@ namespace TraineeManagement.Data
                 .HasOne(s => s.TaskAssignment)
                 .WithMany(t => t.Submissions)
                 .HasForeignKey(s => s.TaskAssignmentId);
+
+            modelBuilder.Entity<SubmissionFile>()
+                .HasOne(f => f.Submission)
+                .WithMany(s => s.Files)
+                .HasForeignKey(f => f.SubmissionId)
+                .OnDelete(DeleteBehavior.Cascade);
 
             // Review -> TaskSubmission
             modelBuilder.Entity<Review>()

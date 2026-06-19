@@ -3,6 +3,7 @@ using System.Text.Json.Serialization;
 using TraineeManagement.Services;
 using TraineeManagement.Data;
 using TraineeManagement.Middlewares;
+using TraineeManagement.Models;
 
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
@@ -47,6 +48,8 @@ builder.Services.AddSwaggerGen(options =>
         });
 });
 
+builder.Services.Configure<StorageSettings>(builder.Configuration.GetSection("Storage"));
+builder.Services.Configure<FileUploadSettings>(builder.Configuration.GetSection("FileStorage"));
 // builder.Services.AddSingleton<ITrainee, TraineeServices>();
 builder.Services.AddScoped<ITrainee, TraineeServices>();
 builder.Services.AddScoped<IUser, UserServices>();
@@ -55,6 +58,10 @@ builder.Services.AddScoped<ILearningTask, LearningTaskServices>();
 builder.Services.AddScoped<ITaskAssignment, TaskAssignmentServices>();
 builder.Services.AddScoped<ITaskSubmission, TaskSubmissionServices>();
 builder.Services.AddScoped<IReview, ReviewServices>();
+builder.Services.AddScoped<IFileStorageService, LocalFileStorageServices>();
+builder.Services.AddScoped<ISubmissionFileService, SubmissionFileServices>();
+
+builder.Services.AddHttpContextAccessor();
 
 builder.Services.AddControllers()
     .AddJsonOptions(options =>

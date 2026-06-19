@@ -141,6 +141,56 @@ namespace TraineeManagement.Migrations
                     b.ToTable("Reviews");
                 });
 
+            modelBuilder.Entity("TraineeManagement.Models.SubmissionFile", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Checksum")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("varchar(128)");
+
+                    b.Property<string>("ContentType")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("varchar(100)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<string>("OriginalFileName")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("varchar(255)");
+
+                    b.Property<long>("Size")
+                        .HasColumnType("bigint");
+
+                    b.Property<string>("StorageName")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("varchar(255)");
+
+                    b.Property<int>("SubmissionId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<int>("UploadedByUserId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("SubmissionId");
+
+                    b.ToTable("SubmissionFiles");
+                });
+
             modelBuilder.Entity("TraineeManagement.Models.TaskAssignment", b =>
                 {
                     b.Property<int>("Id")
@@ -296,9 +346,9 @@ namespace TraineeManagement.Migrations
                         new
                         {
                             Id = 1,
-                            CreatedAt = new DateTime(2026, 6, 12, 12, 6, 26, 220, DateTimeKind.Utc).AddTicks(9045),
+                            CreatedAt = new DateTime(2026, 6, 19, 7, 16, 45, 408, DateTimeKind.Utc).AddTicks(5507),
                             Email = "admin@zeuslearning.com",
-                            Password = "$2a$11$a0jBtrwZVNUzlt0kDB4mmeE0NFS0E11bTOn.w.UwQjCa6a2Zg5ZvG",
+                            Password = "$2a$11$rP6kpqxCXRiQG3Oh1A5i3u9aMLORbuf4lUR/G13BTqAGQ6AnM1hQG",
                             Role = 0,
                             UpdatedAt = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
                             UserName = "Admin_Zeus_Learning"
@@ -320,6 +370,17 @@ namespace TraineeManagement.Migrations
                         .IsRequired();
 
                     b.Navigation("Mentor");
+
+                    b.Navigation("Submission");
+                });
+
+            modelBuilder.Entity("TraineeManagement.Models.SubmissionFile", b =>
+                {
+                    b.HasOne("TraineeManagement.Models.TaskSubmission", "Submission")
+                        .WithMany("Files")
+                        .HasForeignKey("SubmissionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
                     b.Navigation("Submission");
                 });
@@ -369,6 +430,8 @@ namespace TraineeManagement.Migrations
 
             modelBuilder.Entity("TraineeManagement.Models.TaskSubmission", b =>
                 {
+                    b.Navigation("Files");
+
                     b.Navigation("Reviews");
                 });
 #pragma warning restore 612, 618
