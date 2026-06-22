@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using TraineeManagement.Models;
-using TraineeManagement.Services;
+using TraineeManagement.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 
 namespace TraineeManagement.Controllers
@@ -13,44 +13,44 @@ namespace TraineeManagement.Controllers
 
         [HttpGet]
         [Authorize]
-        public async Task<IActionResult> GetAll([FromQuery] string? search)
+        public async Task<IActionResult> GetAllLearningTasks([FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10, [FromQuery] string? search = null, [FromQuery] LearningTaskStatus? status = null)
         {
-            return Ok(await it.GetAll(search));
+            return Ok(await it.GetAllLearningTasks(pageNumber, pageSize, search, status));
         }
 
         [HttpGet("{id}")]
         [Authorize]
-        public async Task<IActionResult> GetById(int id)
+        public async Task<IActionResult> GetLearningTaskById(int id)
         {
-            LearningTask? learningTask = await it.GetById(id);
+            LearningTask? learningTask = await it.GetLearningTaskById(id);
             if (learningTask == null)
             {
                 return NotFound(new { message = "Learning task not found!" });
             }
-            return Ok(it.ReturnDTO(learningTask));
+            return Ok(it.ReturnLearningTaskDTO(learningTask));
         }
 
         [HttpPost]
         [Authorize]
-        public async Task<IActionResult> Create([FromBody] LearningTaskDTO dto)
+        public async Task<IActionResult> CreateLearningTask([FromBody] LearningTaskDTO dto)
         {
-            LearningTask learningTask = await it.Create(dto);
+            LearningTask learningTask = await it.CreateLearningTask(dto);
             return Ok(learningTask);
         }
 
         [HttpPut("{id}")]
         [Authorize]
-        public async Task<IActionResult> Put(int id, [FromBody] LearningTaskDTO dto)
+        public async Task<IActionResult> UpdateLearningTaskById(int id, [FromBody] LearningTaskDTO dto)
         {
-            LearningTask? learningTask = await it.Put(id, dto);
-            return Ok(it.ReturnDTO(learningTask));
+            LearningTask? learningTask = await it.UpdateLearningTaskById(id, dto);
+            return Ok(it.ReturnLearningTaskDTO(learningTask));
         }
 
         [HttpDelete("{id}")]
         [Authorize]
-        public async Task<IActionResult> DeleteById(int id)
+        public async Task<IActionResult> DeleteLearningById(int id)
         {
-            LearningTask? learningTask = await it.DeleteById(id);
+            LearningTask? learningTask = await it.DeleteLearningById(id);
             return NoContent();
         }
     }

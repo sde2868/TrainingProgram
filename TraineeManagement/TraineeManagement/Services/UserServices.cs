@@ -1,6 +1,7 @@
 using TraineeManagement.Models;
 using Microsoft.EntityFrameworkCore;
 using TraineeManagement.Data;
+using TraineeManagement.Interfaces;
 
 namespace TraineeManagement.Services
 {
@@ -25,6 +26,7 @@ namespace TraineeManagement.Services
         {
             try
             {
+                _logger.LogInformation($"Login: user with username {username} logging in...");
                 User? user = await _context.Users.FirstOrDefaultAsync(u => u.UserName == username);
                 if (user == null)
                     return null;
@@ -32,12 +34,12 @@ namespace TraineeManagement.Services
                 bool validPassword = BCrypt.Net.BCrypt.Verify(password, user.Password);
                 if (!validPassword)
                 {
-                    _logger.LogInformation("Invalid Password. UserName: {UserName}", username);
+                    _logger.LogInformation("Login: Invalid Password. UserName: {UserName}", username);
                     return null;
                 }
 
                 _logger.LogInformation(
-                    "User logged in successfully. UserName: {UserName}",
+                    "Login: User logged in successfully. UserName: {UserName}",
                     user.UserName
                 );
 
@@ -46,54 +48,94 @@ namespace TraineeManagement.Services
             catch (Exception ex)
             {
                 _logger.LogWarning(
-                    "Failed login attempt. UserName: {UserName}",
+                    "Login: Failed login attempt. UserName: {UserName}",
                     username
                 );
                 throw new Exception("Error during login.", ex);
             }
         }
 
-        public async Task<List<User>> GetAll(string? search)
+        public async Task<PaginationDTO<UserDTO>> GetAllUsers(int pageNumber, int pageSize, string? search, UserRole? role)
         {
             try
             {
-                List<User> users = await _context.Users.ToListAsync();
+                _logger.LogInformation($"GetAllUsers: filtering users by search {search}.");
+                var query = _context.Users.AsQueryable();
+
+                // Search filter
                 if (!string.IsNullOrWhiteSpace(search))
                 {
                     search = search.ToLower();
 
-                    users = users.Where(u =>
+                    query = query.Where(u =>
                         u.UserName.ToLower().Contains(search) ||
                         u.Email.ToLower().Contains(search)
                     // u.Role.ToLower().Contains(search)
-                    ).ToList();
+                    );
                 }
 
-                return users;
+                // Role filter
+                if (role.HasValue)
+                {
+                    query = query.Where(u => u.Role.Equals(role.Value));
+                }
+
+                var totalRecords = await query.CountAsync();
+
+                var users = await query
+                    .Skip((pageNumber - 1) * pageSize)
+                    .Take(pageSize)
+                    .Select(u => new UserDTO
+                    {
+                        // id = u.id,
+                        UserName = u.UserName,
+                        Email = u.Email,
+                        Role = u.Role,
+                        Password = u.Password
+                    })
+                    .ToListAsync();
+
+                _logger.LogInformation($"GetAllUsers: successfully fetched {totalRecords} users.");
+                return new PaginationDTO<UserDTO>
+                {
+                    PageNumber = pageNumber,
+                    PageSize = pageSize,
+                    TotalRecords = totalRecords,
+                    Data = users
+                };
             }
             catch (Exception ex)
             {
+                _logger.LogError($"GetAllUsers: error fetching users with search {search}.");
                 throw new Exception($"Error while fetcing users.", ex);
             }
         }
 
-        public async Task<User?> GetById(int id)
+        public async Task<User?> GetUserById(int id)
         {
             try
             {
+                _logger.LogInformation($"GetUserById: fetching user with id {id}.");
                 User? user = await _context.Users.FirstOrDefaultAsync(u => u.Id == id);
+                if(user == null)
+                {
+                    _logger.LogWarning($"GetUserById: user with id {id} not found.");
+                    return null;
+                }
                 return user;
             }
             catch (Exception ex)
             {
+                _logger.LogError($"GetUserById: error fetching user with id {id}.");
                 throw new Exception($"Error while fetching user wih id {id}.", ex);
             }
         }
 
-        public async Task<User> Create(UserDTO dto)
+        public async Task<User> CreateUser(UserDTO dto)
         {
             try
             {
+                _logger.LogInformation($"CreateUser: creating new user.");
                 User user = new User
                 {
                     Id = _context.Users.ToArray().Length == 0 ? 1 : _context.Users.ToArray().Length + 1,
@@ -106,20 +148,27 @@ namespace TraineeManagement.Services
                 };
                 await _context.Users.AddAsync(user);
                 await _context.SaveChangesAsync();
+                _logger.LogInformation($"CreateUser: successfully created new user with id {user.Id}.");
                 return user;
             }
             catch (Exception ex)
             {
+                _logger.LogError($"CreateUser: error creating new user.");
                 throw new Exception($"Error while creating user.", ex);
             }
         }
 
-        public async Task<User?> Put(int id, UserDTO dto)
+        public async Task<User?> UpdateUserById(int id, UserDTO dto)
         {
             try
             {
+                _logger.LogInformation($"UpdateUser: updating user with id {id}.");
                 User? user = await _context.Users.FirstOrDefaultAsync(u => u.Id == id);
-                if (user == null) return null;
+                if (user == null)
+                {
+                    _logger.LogInformation($"UpdateUser: user with id {id} not found.");
+                    return null;
+                }
 
                 user.UserName = dto.UserName;
                 user.Email = dto.Email;
@@ -128,36 +177,44 @@ namespace TraineeManagement.Services
                 user.UpdatedAt = DateTime.UtcNow;
 
                 await _context.SaveChangesAsync();
+                _logger.LogInformation($"UpdateUser: user eith id {id} updated successfully.");
                 return user;
             }
             catch (Exception ex)
             {
+                _logger.LogError($"UpdateUser: error updating user with id {id}.");
                 throw new Exception($"Error updsting user with id {id}.", ex);
             }
         }
 
-        public async Task<User?> DeleteById(int id)
+        public async Task<User?> DeleteUserById(int id)
         {
             try
             {
+                _logger.LogInformation($"DeleteUserById: deleting user by id {id}.");
                 User? user = await _context.Users.FirstOrDefaultAsync(u => u.Id == id);
-                if (user == null) return null;
-
+                if (user == null)
+                {
+                    _logger.LogWarning($"DeleteUserById: user with id {id} not found.");
+                    return null;
+                }
                 _context.Users.Remove(user);
                 await _context.SaveChangesAsync();
-
+                _logger.LogInformation($"DeleteUserById: successfully deleted user with id {id}.");
                 return user;
             }
             catch (Exception ex)
             {
+                _logger.LogError($"DeleteUserById: error deleting user with id {id}.");
                 throw new Exception($"Error deleting user with id {id}.", ex);
             }
         }
 
-        public UserDTO ReturnDTO(User user)
+        public UserDTO ReturnUserDTO(User user)
         {
             try
             {
+                _logger.LogInformation($"ReturnUserDTO: converting user with id {user.Id} to DTO.");
                 UserDTO dto = new()
                 {
                     UserName = user.UserName,
@@ -168,6 +225,7 @@ namespace TraineeManagement.Services
             }
             catch (Exception ex)
             {
+                _logger.LogError($"ReturnUserDTO: error converting user with id {user.Id} to DTO.");
                 throw new Exception("Error while converting user to DTO.", ex);
             }
         }

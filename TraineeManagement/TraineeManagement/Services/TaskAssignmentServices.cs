@@ -1,6 +1,7 @@
 using TraineeManagement.Models;
 using Microsoft.EntityFrameworkCore;
 using TraineeManagement.Data;
+using TraineeManagement.Interfaces;
 
 namespace TraineeManagement.Services
 {
@@ -35,65 +36,94 @@ namespace TraineeManagement.Services
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex,
-                        "Error while seeding task assignment data.");
+                _logger.LogError(ex, "Error while seeding task assignment data.");
                 throw new Exception($"Error while seeding task assignment data.", ex);
             }
         }
 
-        public async Task<List<TaskAssignment>> GetAll(string? search)
+        public async Task<PaginationDTO<TaskAssignmentDTO>> GetAllTaskAssignments(int pageNumber = 1, int pageSize = 10, string? search = null, TaskAssignmentStatus? status = null)
         {
             try
             {
-                List<TaskAssignment> taskAssignments = await _context.TaskAssignments.ToListAsync();
+                _logger.LogInformation($"GetAllTaskAssignments: filtering all the task assignments by search {search}.");
+                var query = _context.TaskAssignments.AsQueryable();
 
                 if (!string.IsNullOrWhiteSpace(search))
                 {
                     search = search.ToLower();
 
-                    taskAssignments = taskAssignments.Where(t =>
-                        t.Status.ToString().ToLower().Contains(search) ||
+                    query = query.Where(t =>
                         t.Remarks.ToLower().Contains(search)
-                    ).ToList();
+                    );
                 }
 
-                _logger.LogInformation($"task assignments ({taskAssignments.Count}) fetched successfully.");
+                // Status filter
+                if (status.HasValue)
+                {
+                    query = query.Where(t => t.Status.Equals(status.Value));
+                }
 
-                return taskAssignments;
+                // Total count before pagination
+                var totalRecords = await query.CountAsync();
+
+                // Pagination using Skip and Take
+                var taskAssignemnts = await query
+                    .Skip((pageNumber - 1) * pageSize)
+                    .Take(pageSize)
+                    .Select(t => new TaskAssignmentDTO
+                    {
+                        // id = t.id,
+                        TraineeId = t.TraineeId,
+                        MentorId = t.MentorId,
+                        LearningTaskId = t.LearningTaskId,
+                        AssignedDate = t.AssignedDate,
+                        DueDate = t.DueDate,
+                        Status = t.Status,
+                        Remarks = t.Remarks
+                    })
+                    .ToListAsync();
+
+                _logger.LogInformation($"GetAllTaskAssignments: task assignments ({totalRecords}) fetched successfully for search {search}.");
+                return new PaginationDTO<TaskAssignmentDTO>
+                {
+                    PageNumber = pageNumber,
+                    PageSize = pageSize,
+                    TotalRecords = totalRecords,
+                    Data = taskAssignemnts
+                };
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error fetching task assignments.");
+                _logger.LogError(ex, $"GetAllTaskAssignments: error fetching task assignments for search {search}.");
                 throw new Exception($"Error while deleting task assignments.", ex);
             }
         }
 
-        public async Task<TaskAssignment?> GetById(int id)
+        public async Task<TaskAssignment?> GetTaskAssignmentById(int id)
         {
             try
             {
+                _logger.LogInformation($"GetTaskAssignemntById: fetching task assignment with id {id}.");
                 TaskAssignment? taskAssignment = await _context.TaskAssignments.Include(t => t.Submissions).FirstOrDefaultAsync(t => t.Id == id);
                 if (taskAssignment == null)
                 {
-                    _logger.LogWarning(
-                        "TaskAssignment not found. Id: {Id}",
-                        id);
+                    _logger.LogWarning($"GetTaskAssignemntById: task assignment not found. Id: {id}");
                 }
                 return taskAssignment;
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex,
-                        "Error while fetching task assignment.");
+                _logger.LogError(ex, $"GetTaskAssignemntById: error while fetching task assignment with id {id}.");
                 throw new Exception($"Error while feetching task assignment with id {id}.", ex);
             }
 
         }
 
-        public async Task<TaskAssignment> Create(TaskAssignmentDTO dto)
+        public async Task<TaskAssignment> CreateTaskAssignment(TaskAssignmentDTO dto)
         {
             try
             {
+                _logger.LogInformation($"Creating new task assignment.");
                 // Validate FK
                 if (!await _context.Trainees.AnyAsync(x => x.id == dto.TraineeId))
                     throw new Exception("Trainee does not exist");
@@ -124,35 +154,28 @@ namespace TraineeManagement.Services
 
                 await _context.SaveChangesAsync();
 
-                _logger.LogInformation(
-                    "task assignment created successfully. Id: {Id}",
-                    taskAssignment.Id
-                );
+                _logger.LogInformation($"CreateTaskAssignment: task assignment created successfully. Id: {taskAssignment.Id}");
 
                 return taskAssignment;
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex,
-                        "Error while creating task assignment.");
-
+                _logger.LogError(ex, "CreateTaskAssignment: error while creating task assignment.");
                 throw new Exception($"Error while creating task assignment.", ex);
             }
 
         }
 
-        public async Task<TaskAssignment?> Put(int id, TaskAssignmentStatus status)
+        public async Task<TaskAssignment?> UpdateTaskAssignmentStatus(int id, TaskAssignmentStatus status)
         {
             try
             {
+                _logger.LogInformation($"UpdateTaskAssignmentStatus: updating status of task assignment id: {id}.");
                 TaskAssignment? taskAssignment = await _context.TaskAssignments.FirstOrDefaultAsync(t => t.Id == id);
 
                 if (taskAssignment == null)
                 {
-                    _logger.LogWarning(
-                        "Update failed. Task assignment not found. Id: {Id}",
-                        id);
-
+                    _logger.LogWarning($"UpdateTaskAssignmentStatus: update failed. Task assignment not found. Id: {id}");
                     return null;
                 }
 
@@ -179,26 +202,21 @@ namespace TraineeManagement.Services
 
                 await _context.SaveChangesAsync();
 
-                _logger.LogInformation(
-                    "task assignment updated successfully. Id: {Id}",
-                    taskAssignment.Id
-                );
-
+                _logger.LogInformation($"UpdateTaskAssignmentStatus: task assignment updated successfully. Id: {id}");
                 return taskAssignment;
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex,
-                        "Error while updating task assignment.");
+                _logger.LogError(ex, $"UpdateTaskAssignmentStatus: error while updating task assignment with id {id}.");
                 throw new Exception($"Error while updating task assignment with id {id}.", ex);
             }
-
         }
 
-        public TaskAssignmentDTO ReturnDTO(TaskAssignment t)
+        public TaskAssignmentDTO ReturnTaskAssignmentDTO(TaskAssignment t)
         {
             try
             {
+                _logger.LogInformation($"ReturnTaskAssignmentDTO: converting review with id {t.Id} to DTO.");
                 TaskAssignmentDTO dto = new()
                 {
                     TraineeId = t.TraineeId,
@@ -213,6 +231,7 @@ namespace TraineeManagement.Services
             }
             catch (Exception ex)
             {
+                _logger.LogError($"ReturnTaskAssignmentDTO: error converting review with id {t.Id} to DTO.");
                 throw new Exception("Error while converting task assignment to DTO.", ex);
             }
 

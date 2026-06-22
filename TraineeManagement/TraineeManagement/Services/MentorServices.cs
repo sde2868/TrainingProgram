@@ -1,6 +1,7 @@
 using TraineeManagement.Models;
 using Microsoft.EntityFrameworkCore;
 using TraineeManagement.Data;
+using TraineeManagement.Interfaces;
 
 namespace TraineeManagement.Services
 {
@@ -33,68 +34,97 @@ namespace TraineeManagement.Services
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex,
-                        "Error while seeding mentors.");
+                _logger.LogError(ex, "Error while seeding mentors.");
                 throw new Exception($"Error while seeding mentor data.", ex);
             }
         }
 
-        public async Task<List<Mentor>> GetAll(string? search)
+        public async Task<PaginationDTO<MentorDTO>> GetAllMentors(int pageNumber = 1, int pageSize = 10, string? search = null, MentorStatus? status = null)
         {
             try
             {
-                List<Mentor> mentors = await _context.Mentors.ToListAsync();
+                _logger.LogInformation($"GetAllMentors: Searching for {search} in all mentors.");
+                var query = _context.Mentors.AsQueryable();
+
                 if (!string.IsNullOrWhiteSpace(search))
                 {
                     search = search.ToLower();
 
-                    mentors = mentors.Where(m =>
+                    query = query.Where(m =>
                         m.FirstName.ToLower().Contains(search) ||
                         m.LastName.ToLower().Contains(search) ||
                         m.Email.ToLower().Contains(search) ||
-                        m.Expertise.Any(e => e.ToLower().Contains(search)) ||
-                        m.Status.ToString().ToLower().Contains(search)
-                    // u.Role.ToLower().Contains(search)
-                    ).ToList();
+                        m.Expertise.Any(e => e.ToLower().Contains(search))
+                    );
                 }
 
-                _logger.LogInformation($"Mentors fetched ({mentors.Count}) successfully.");
-                return mentors;
+                // Status filter
+                if (status.HasValue)
+                {
+                    query = query.Where(m => m.Status.Equals(status.Value));
+                }
+
+                // Total count before pagination
+                var totalRecords = await query.CountAsync();
+
+                // Pagination using Skip and Take
+                var mentors = await query
+                    .Skip((pageNumber - 1) * pageSize)
+                    .Take(pageSize)
+                    .Select(m => new MentorDTO
+                    {
+                        // id = m.id,
+                        FirstName = m.FirstName,
+                        LastName = m.LastName,
+                        Email = m.Email,
+                        Expertise = m.Expertise,
+                        Status = m.Status
+                    })
+                    .ToListAsync();
+
+                _logger.LogInformation($"GetAllMentors: mentors fetched ({totalRecords}) successfully for search {search}.");
+                return new PaginationDTO<MentorDTO>
+                {
+                    PageNumber = pageNumber,
+                    PageSize = pageSize,
+                    TotalRecords = totalRecords,
+                    Data = mentors
+                };
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex,
-                        "Error while fetching mentors.");
+                _logger.LogError(ex, $"GetAllMentors: error while fetching mentors for search {search}.");
                 throw new Exception($"Error while fetcing mentors.", ex);
             }
         }
 
-        public async Task<Mentor?> GetById(int id)
+        public async Task<Mentor?> GetMentorById(int id)
         {
             try
             {
+                _logger.LogInformation($"GetMentorById: fetching mentor by id: {id}.");
                 Mentor? mentor = await _context.Mentors.FirstOrDefaultAsync(m => m.Id == id);
                 if(mentor == null)
                 {
-                    _logger.LogWarning($"Mentor not found!");
+                    _logger.LogWarning($"GetMentorById: mentor by id {id} not found!");
                     return null;
                 }
 
-                _logger.LogInformation($"Mentor with id {mentor.Id} fetched successfully.");
+                _logger.LogInformation($"GetMentorById: mentor with id {mentor.Id} fetched successfully.");
                 return mentor;
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex,
-                        "Error while fetching mentor.");
+                _logger.LogError(ex, $"GetMentorById: error while fetching mentor with id {id}.");
                 throw new Exception($"Error while fetching mentor wih id {id}.", ex);
             }
         }
 
-        public async Task<Mentor> Create(MentorDTO dto)
+        public async Task<Mentor> CreateMentor(MentorDTO dto)
         {
             try
             {
+                _logger.LogInformation($"CreateMentor: creating mentor.");
                 Mentor mentor = new Mentor
                 {
                     Id = _context.Mentors.ToArray().Length == 0 ? 1 : _context.Mentors.ToArray().Length + 1,
@@ -109,21 +139,21 @@ namespace TraineeManagement.Services
                 await _context.Mentors.AddAsync(mentor);
                 await _context.SaveChangesAsync();
 
-                _logger.LogInformation($"Mentor with id {mentor.Id} created successfully.");
+                _logger.LogInformation($"CreateMentor: mentor with id {mentor.Id} created successfully.");
                 return mentor;
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex,
-                        "Error while creating mentor.");
+                _logger.LogError(ex, "CreateMentor: error while creating mentor.");
                 throw new Exception($"Error while creating mentor.", ex);
             }
         }
 
-        public async Task<Mentor?> Put(int id, MentorDTO dto)
+        public async Task<Mentor?> UpdateMentor(int id, MentorDTO dto)
         {
             try
             {
+                _logger.LogInformation($"UpdateMentorById: updating mentor by id: {id}.");
                 Mentor? mentor = await _context.Mentors.FirstOrDefaultAsync(m => m.Id == id);
                 if (mentor == null) return null;
 
@@ -136,41 +166,42 @@ namespace TraineeManagement.Services
 
                 await _context.SaveChangesAsync();
 
-                _logger.LogInformation($"Mentor with id {mentor.Id} updated succssfully.");
+                _logger.LogInformation($"UpdateMentor: mentor with id {mentor.Id} updated succssfully.");
                 return mentor;
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error while updating mentor.");
+                _logger.LogError(ex, $"UpdateMentorById: error while updating mentor with id {id}.");
                 throw new Exception($"Error updating mentor with id {id}.", ex);
             }
         }
 
-        public async Task<Mentor?> DeleteById(int id)
+        public async Task<Mentor?> DeleteMentorById(int id)
         {
             try
             {
+                _logger.LogInformation($"DeleteMentorById: deleting mentor by id: {id}.");
                 Mentor? mentor = await _context.Mentors.FirstOrDefaultAsync(m => m.Id == id);
                 if (mentor == null) return null;
 
                 _context.Mentors.Remove(mentor);
                 await _context.SaveChangesAsync();
 
-                _logger.LogInformation($"Mentor with id {mentor.Id} deleted successfully.");
+                _logger.LogInformation($"DeleteMentor: mentor with id {mentor.Id} deleted successfully.");
                 return mentor;
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex,
-                        "Error while deleting mentor.");
+                _logger.LogError(ex, $"DeleteMentor: error while deleting mentor with id {id}.");
                 throw new Exception($"Error deleting mentor with id {id}.", ex);
             }
         }
 
-        public MentorDTO ReturnDTO(Mentor mentor)
+        public MentorDTO ReturnMentorDTO(Mentor mentor)
         {
             try
             {
+                _logger.LogInformation($"ReturnLearningTaskDTO: converting mentor with id {mentor.Id} to DTO");
                 MentorDTO dto = new()
                 {
                     FirstName = mentor.FirstName,
@@ -183,6 +214,7 @@ namespace TraineeManagement.Services
             }
             catch (Exception ex)
             {
+                _logger.LogError(ex, $"ReturnMentorDTO: error while converting mentor with id {mentor.Id} to DTO");
                 throw new Exception("Error while converting mentor to DTO.", ex);
             }
         }

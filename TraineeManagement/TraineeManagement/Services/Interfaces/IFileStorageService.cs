@@ -1,4 +1,4 @@
-namespace TraineeManagement.Services;
+namespace TraineeManagement.Interfaces;
 
 public interface IFileStorageService
 {

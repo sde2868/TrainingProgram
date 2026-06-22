@@ -1,6 +1,8 @@
 using TraineeManagement.Models;
 using Microsoft.EntityFrameworkCore;
 using TraineeManagement.Data;
+using TraineeManagement.Constants;
+using TraineeManagement.Interfaces;
 
 namespace TraineeManagement.Services
 {
@@ -35,16 +37,16 @@ namespace TraineeManagement.Services
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex,
-                        "Error while seeding trainee data.");
+                _logger.LogError(ex, "Error while seeding trainee data.");
                 throw new Exception($"Error while seeding trainee data.", ex);
             }
         }
 
-        public async Task<PaginationDTO<TraineeDTO>> GetTraineesAsync(int pageNumber, int pageSize, string? search, TraineeStatus? status)
+        public async Task<PaginationDTO<TraineeDTO>> GetAllTrainees(int pageNumber, int pageSize, string? search, TraineeStatus? status)
         {
             try
             {
+                _logger.LogInformation($"GetAllTrainees: filtering trainees by search {search}.");
                 var query = _context.Trainees.AsQueryable();
 
                 // Search filter
@@ -61,7 +63,6 @@ namespace TraineeManagement.Services
                 }
 
                 // Status filter
-
                 if (status.HasValue)
                 {
                     query = query.Where(t => t.Status.Equals(status.Value));
@@ -85,6 +86,7 @@ namespace TraineeManagement.Services
                     })
                     .ToListAsync();
 
+                _logger.LogInformation($"GetAllTrainees: successfully fetched {totalRecords} trainees by search {search}.");
                 return new PaginationDTO<TraineeDTO>
                 {
                     PageNumber = pageNumber,
@@ -95,38 +97,37 @@ namespace TraineeManagement.Services
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex,
-                        "Error searching trainees.");
+                _logger.LogError(ex, $"GetAllTrainees: error searching trainees with search {search}.");
                 throw new Exception("Error searching trainees.", ex);
             }
         }
 
-        public async Task<Trainee?> GetById(int id)
+        public async Task<Trainee?> GetTraineeById(int id)
         {
             try
             {
+                _logger.LogInformation($"GetTraineeById: fetching trainee by id {id}.");
                 Trainee? trainee = await _context.Trainees.FirstOrDefaultAsync(t => t.id == id);
                 if (trainee == null)
                 {
-                    _logger.LogWarning(
-                        "Trainee not found. Id: {Id}",
-                        id);
+                    _logger.LogWarning($"GetTraineeById: trainee not found. Id: {id}");
+                    return null;
                 }
                 return trainee;
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex,
-                        "Error while fetching trainee.");
+                _logger.LogError(ex, $"GetTraineeById: error while fetching trainee with id {id}.");
                 throw new Exception($"Error while feetching trainee with id {id}.", ex);
             }
 
         }
 
-        public async Task<Trainee> Create(TraineeDTO dto)
+        public async Task<Trainee> CreateTrainee(TraineeDTO dto)
         {
             try
             {
+                _logger.LogInformation("CreateTrainee: creating new trainee.");
                 Trainee trainee = new Trainee
                 {
                     id = _context.Trainees.ToArray().Length == 0 ? 1 : _context.Trainees.ToArray().Length + 1,
@@ -144,27 +145,25 @@ namespace TraineeManagement.Services
                 await _context.SaveChangesAsync();
 
                 _logger.LogInformation(
-                    "Trainee created successfully. Id: {Id}, Email: {Email}",
+                    "CreateTrainee: trainee created successfully. Id: {Id}, Email: {Email}",
                     trainee.id,
                     trainee.Email
                 );
-
                 return trainee;
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex,
-                        "Error while creating trainee.");
-
+                _logger.LogError(ex, "CreateTrainee: error while creating trainee.");
                 throw new Exception($"Error while creating trainee.", ex);
             }
 
         }
 
-        public async Task<Trainee?> Put(int id, TraineeDTO dto)
+        public async Task<Trainee?> UpdateTrainee(int id, TraineeDTO dto)
         {
             try
             {
+                _logger.LogInformation($"UpdateTrainee: updating trainee with id {id}.");
                 Trainee? trainee = await _context.Trainees.FirstOrDefaultAsync(t => t.id == id);
 
                 if (trainee == null)
@@ -185,34 +184,28 @@ namespace TraineeManagement.Services
 
                 await _context.SaveChangesAsync();
 
-                _logger.LogInformation(
-                    "Trainee updated successfully. Id: {Id}",
-                    trainee.id
-                );
+                _logger.LogInformation($"UpdateTrainee: trainee updated successfully. Id: {id}");
 
                 return trainee;
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex,
-                        "Error while updating trainee.");
+                _logger.LogError(ex, $"UpdateTrainee: error while updating trainee with id {id}.");
                 throw new Exception($"Error while updating trainee with id {id}.", ex);
             }
 
         }
 
-        public async Task<Trainee?> DeleteById(int id)
+        public async Task<Trainee?> DeleteTraineeById(int id)
         {
             try
             {
+                _logger.LogInformation($"DeleteTraineeById: deleting trainee with id {id}.");
                 Trainee? trainee = await _context.Trainees.FirstOrDefaultAsync(t => t.id == id);
 
                 if (trainee == null)
                 {
-                    _logger.LogWarning(
-                        "Delete failed. Trainee not found. Id: {Id}",
-                        id);
-
+                    _logger.LogWarning($"DeleteTraineeById: trainee not found. Id: {id}.");
                     return null;
                 }
 
@@ -220,26 +213,23 @@ namespace TraineeManagement.Services
 
                 await _context.SaveChangesAsync();
 
-                _logger.LogInformation(
-                    "Trainee deleted successfully. Id: {Id}",
-                    trainee.id
-                );
+                _logger.LogInformation($"DeleteTraineeById: trainee deleted successfully. Id: {id}");
 
                 return trainee;
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex,
-                        "Error while deleting trainee.");
+                _logger.LogError(ex, $"DeleteTraineeById: error while deleting trainee with id {id}.");
                 throw new Exception($"Error while deleting trainee with id {id}.", ex);
             }
 
         }
 
-        public TraineeDTO ReturnDTO(Trainee tr)
+        public TraineeDTO ReturnTraineeDTO(Trainee tr)
         {
             try
             {
+                _logger.LogInformation($"ReturnTraineeDTO: converting trainee with id {tr.id} to DTO.");
                 TraineeDTO dto = new()
                 {
                     FirstName = tr.FirstName,
@@ -252,6 +242,7 @@ namespace TraineeManagement.Services
             }
             catch (Exception ex)
             {
+                _logger.LogInformation($"ReturnTraineeDTO: converting trainee with id {tr.id} to DTO.");
                 throw new Exception("Error while converting trainee to DTO.", ex);
             }
 
