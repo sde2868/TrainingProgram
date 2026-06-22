@@ -1,6 +1,7 @@
 using TraineeManagement.Models;
 using Microsoft.EntityFrameworkCore;
 using TraineeManagement.Data;
+using TraineeManagement.Interfaces;
 
 namespace TraineeManagement.Services
 {
@@ -35,65 +36,94 @@ namespace TraineeManagement.Services
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex,
-                        "Error while seeding review data.");
+                _logger.LogError(ex, "Error while seeding review data.");
                 throw new Exception($"Error while seeding review data.", ex);
             }
         }
 
-        public async Task<List<Review>> GetAll(string? search)
-        { // SubmissionId MentorId Feedback Score Status ReviewedDate
+        public async Task<PaginationDTO<ReviewDTO>> GetAllReviews(int pageNumber = 1, int pageSize = 10, string? search = null, ReviewStatus? status = null)
+        {
             try
-            {
-                List<Review> reviews = await _context.Reviews.ToListAsync();
+            {   
+                _logger.LogInformation($"GetAllReviews: searching for {search} in all reviews.");
+                var query = _context.Reviews.AsQueryable();
 
                 if (!string.IsNullOrWhiteSpace(search))
                 {
                     search = search.ToLower();
 
-                    reviews = reviews.Where(r =>
-                        r.Status.ToString().ToLower().Contains(search) ||
+                    query = query.Where(r =>
                         r.Feedback.ToLower().Contains(search)
-                    ).ToList();
+                    );
+                }
+                
+                // Status filter
+                if (status.HasValue)
+                {
+                    query = query.Where(t => t.Status.Equals(status.Value));
                 }
 
-                _logger.LogInformation($"reviews ({reviews.Count}) fetched successfully.");
+                // Total count before pagination
+                var totalRecords = await query.CountAsync();
 
-                return reviews;
+                // Pagination using Skip and Take
+                var reviews = await query
+                    .Skip((pageNumber - 1) * pageSize)
+                    .Take(pageSize)
+                    .Select(t => new ReviewDTO
+                    {
+                        // id = t.id,
+                        Feedback = t.Feedback,
+                        Score = t.Score,
+                        TaskSubmissionId = t.TaskSubmissionId,
+                        MentorId = t.MentorId,
+                        Status = t.Status,
+                        ReviewedDate = t.ReviewedDate
+                    })
+                    .ToListAsync();
+
+
+                _logger.LogInformation($"GetAllReviews: reviews ({totalRecords}) fetched successfully for search {search}.");
+                return new PaginationDTO<ReviewDTO>
+                {
+                    PageNumber = pageNumber,
+                    PageSize = pageSize,
+                    TotalRecords = totalRecords,
+                    Data = reviews
+                };
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error fetching reviews.");
+                _logger.LogError(ex, "GetAllReviews: error fetching reviews.");
                 throw new Exception($"Error while deleting reviews.", ex);
             }
         }
 
-        public async Task<Review?> GetById(int id)
+        public async Task<Review?> GetReviewById(int id)
         {
             try
             {
+                _logger.LogInformation($"GetReviewById: fetching review by id: {id}.");
                 Review? review = await _context.Reviews.FirstOrDefaultAsync(r => r.Id == id);
                 if (review == null)
                 {
-                    _logger.LogWarning(
-                        "Review not found. Id: {Id}",
-                        id);
+                    _logger.LogWarning($"GetReviewById: review with id {id} not found!");
                 }
                 return review;
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex,
-                        "Error while fetching review.");
+                _logger.LogError(ex, $"GetReviewById: error while fetching review with id {id}.");
                 throw new Exception($"Error while feetching review with id {id}.", ex);
             }
 
         }
 
-        public async Task<Review> Create(ReviewDTO dto)
+        public async Task<Review> CreateReview(ReviewDTO dto)
         {
             try
             {
+                _logger.LogInformation($"CreateReview: creating review.");
                 // Validate FK
                 if (!await _context.TaskSubmissions.AnyAsync(x => x.Id == dto.TaskSubmissionId))
                     throw new Exception("TaskSubmission does not exist");
@@ -120,27 +150,22 @@ namespace TraineeManagement.Services
 
                 await _context.SaveChangesAsync();
 
-                _logger.LogInformation(
-                    "review created successfully. Id: {Id}",
-                    review.Id
-                );
-
+                _logger.LogInformation($"CreateReview: review created successfully. Id: {review.Id}");
                 return review;
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex,
-                        "Error while creating review.");
-
+                _logger.LogError(ex, "CreateReview: error while creating review.");
                 throw new Exception($"Error while creating review.", ex);
             }
 
         }
 
-        public ReviewDTO ReturnDTO(Review r)
+        public ReviewDTO ReturnReviewDTO(Review r)
         {
             try
             {
+                _logger.LogInformation($"ReturnReviewDTO: converting review with id {r.Id} to DTO.");
                 ReviewDTO dto = new()
                 {
                     TaskSubmissionId = r.TaskSubmissionId,
@@ -155,6 +180,7 @@ namespace TraineeManagement.Services
             }
             catch (Exception ex)
             {
+                _logger.LogError($"ReturnReviewDTO: error converting review with id {r.Id} to DTO.");
                 throw new Exception("Error while converting review to DTO.", ex);
             }
 

@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using TraineeManagement.Models;
-using TraineeManagement.Services;
+using TraineeManagement.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 
 namespace TraineeManagement.Controllers
@@ -13,44 +13,44 @@ namespace TraineeManagement.Controllers
 
         [HttpGet]
         [Authorize]
-        public async Task<IActionResult> GetAll([FromQuery] string? search)
+        public async Task<IActionResult> GetAllMentors([FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10, [FromQuery] string? search = null, [FromQuery] MentorStatus? status = null)
         {
-            return Ok(await it.GetAll(search));
+            return Ok(await it.GetAllMentors(pageNumber, pageSize, search, status));
         }
 
         [HttpGet("{id}")]
         [Authorize]
-        public async Task<IActionResult> GetById(int id)
+        public async Task<IActionResult> GetMentorById(int id)
         {
-            Mentor? mentor = await it.GetById(id);
+            Mentor? mentor = await it.GetMentorById(id);
             if (mentor == null)
             {
                 return NotFound(new { message = "Mentor not found!" });
             }
-            return Ok(it.ReturnDTO(mentor));
+            return Ok(it.ReturnMentorDTO(mentor));
         }
 
         [HttpPost]
         [Authorize]
-        public async Task<IActionResult> Create([FromBody] MentorDTO dto)
+        public async Task<IActionResult> CreateMentor([FromBody] MentorDTO dto)
         {
-            Mentor mentor = await it.Create(dto);
+            Mentor mentor = await it.CreateMentor(dto);
             return Ok(mentor);
         }
 
         [HttpPut("{id}")]
         [Authorize]
-        public async Task<IActionResult> Put(int id, [FromBody] MentorDTO dto)
+        public async Task<IActionResult> UpdateMentor(int id, [FromBody] MentorDTO dto)
         {
-            Mentor? mentor = await it.Put(id, dto);
-            return Ok(it.ReturnDTO(mentor));
+            Mentor? mentor = await it.UpdateMentor(id, dto);
+            return Ok(it.ReturnMentorDTO(mentor));
         }
 
         [HttpDelete("{id}")]
         [Authorize]
-        public async Task<IActionResult> DeleteById(int id)
+        public async Task<IActionResult> DeleteMentorById(int id)
         {
-            Mentor? mentor = await it.DeleteById(id);
+            Mentor? mentor = await it.DeleteMentorById(id);
             return NoContent();
         }
     }

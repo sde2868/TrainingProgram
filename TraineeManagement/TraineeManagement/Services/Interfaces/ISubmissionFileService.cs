@@ -1,6 +1,6 @@
 using TraineeManagement.Models;
 
-namespace TraineeManagement.Services;
+namespace TraineeManagement.Interfaces;
 
 public interface ISubmissionFileService
 {

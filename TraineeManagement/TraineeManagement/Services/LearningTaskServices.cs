@@ -1,6 +1,7 @@
 using TraineeManagement.Models;
 using Microsoft.EntityFrameworkCore;
 using TraineeManagement.Data;
+using TraineeManagement.Interfaces;
 
 namespace TraineeManagement.Services
 {
@@ -35,68 +36,95 @@ namespace TraineeManagement.Services
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex,
-                        "Error while seeding learning task data.");
+                _logger.LogError(ex, "Error while seeding learning task data.");
                 throw new Exception($"Error while seeding learning task data.", ex);
             }
         }
 
-        public async Task<List<LearningTask>> GetAll(string? search)
+        public async Task<PaginationDTO<LearningTaskDTO>> GetAllLearningTasks(int pageNumber, int pageSize, string? search, LearningTaskStatus? status)
         {
             try
             {
-                List<LearningTask> learningTasks = await _context.LearningTasks.ToListAsync();
+                _logger.LogInformation($"GetAllLearningTasks: Searching for {search} in all learning tasks.");
+                var query = _context.LearningTasks.AsQueryable();
 
                 if (!string.IsNullOrWhiteSpace(search))
                 {
                     search = search.ToLower();
 
-                    learningTasks = learningTasks.Where(t =>
+                    query = query.Where(t =>
                         t.Title.ToLower().Contains(search) ||
                         t.Description.ToLower().Contains(search) ||
-                        t.Status.ToString().ToLower().Contains(search) ||
                         t.ExpectedTechStack.Any(ts => ts.ToLower().Contains(search)) ||
                         t.DueDate.ToLocalTime().ToString().ToLower().Contains(search)
-                    ).ToList();
+                    );
                 }
 
-                _logger.LogInformation($"Learning tasks ({learningTasks.Count}) fetched successfully.");
+                // Status filter
+                if (status.HasValue)
+                {
+                    query = query.Where(t => t.Status.Equals(status.Value));
+                }
 
-                return learningTasks;
+                // Total count before pagination
+                var totalRecords = await query.CountAsync();
+
+                // Pagination using Skip and Take
+                var learningTasks = await query
+                    .Skip((pageNumber - 1) * pageSize)
+                    .Take(pageSize)
+                    .Select(t => new LearningTaskDTO
+                    {
+                        // id = t.id,
+                        Title = t.Title,
+                        Description = t.Description,
+                        ExpectedTechStack = t.ExpectedTechStack,
+                        Status = t.Status,
+                        DueDate = t.DueDate
+                    })
+                    .ToListAsync();
+
+                _logger.LogInformation($"GetAllLearnnigTasks: Learning tasks ({totalRecords}) fetched successfully for search {search}.");
+                return new PaginationDTO<LearningTaskDTO>
+                {
+                    PageNumber = pageNumber,
+                    PageSize = pageSize,
+                    TotalRecords = totalRecords,
+                    Data = learningTasks
+                };
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error fetching learning tasks.");
+                _logger.LogError(ex, $"GetAllLearningTasks: Error fetching learning tasks for search {search}.");
                 throw new Exception($"Error while deleting learning tasks.", ex);
             }
         }
 
-        public async Task<LearningTask?> GetById(int id)
+        public async Task<LearningTask?> GetLearningTaskById(int id)
         {
             try
             {
+                _logger.LogInformation($"GetLearningTaskById: fetching learning task id: {id}.");
                 LearningTask? learningTask = await _context.LearningTasks.FirstOrDefaultAsync(t => t.Id == id);
                 if (learningTask == null)
                 {
-                    _logger.LogWarning(
-                        "LearningTask not found. Id: {Id}",
-                        id);
+                    _logger.LogWarning("GetLearningTaskById: LearningTask not found. Id: {Id}", id);
                 }
                 return learningTask;
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex,
-                        "Error while fetching learning task.");
-                throw new Exception($"Error while feetching learning task with id {id}.", ex);
+                _logger.LogError(ex, $"GetLearningTaskById, Error while fetching learning task by id {id}.");
+                throw new Exception($"Error while fetching learning task with id {id}.", ex);
             }
 
         }
 
-        public async Task<LearningTask> Create(LearningTaskDTO dto)
+        public async Task<LearningTask> CreateLearningTask(LearningTaskDTO dto)
         {
             try
             {
+                _logger.LogInformation($"CreateLearningTask: creating new learning task.");
                 LearningTask learningTask = new LearningTask
                 {
                     Id = _context.LearningTasks.ToArray().Length == 0 ? 1 : _context.LearningTasks.ToArray().Length + 1,
@@ -114,7 +142,7 @@ namespace TraineeManagement.Services
                 await _context.SaveChangesAsync();
 
                 _logger.LogInformation(
-                    "Learning task created successfully. Id: {Id}, Title: {Title}",
+                    "CreateLearningTask: Learning task created successfully. Id: {Id}, Title: {Title}",
                     learningTask.Id,
                     learningTask.Title
                 );
@@ -123,24 +151,23 @@ namespace TraineeManagement.Services
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex,
-                        "Error while creating learning task.");
-
+                _logger.LogError(ex, "CreateLeaningTask: Error while creating learning task.");
                 throw new Exception($"Error while creating learning task.", ex);
             }
 
         }
 
-        public async Task<LearningTask?> Put(int id, LearningTaskDTO dto)
+        public async Task<LearningTask?> UpdateLearningTaskById(int id, LearningTaskDTO dto)
         {
             try
             {
+                _logger.LogInformation($"UpdateLearningTaskById: updating learning task by if {id}.");
                 LearningTask? learningTask = await _context.LearningTasks.FirstOrDefaultAsync(t => t.Id == id);
 
                 if (learningTask == null)
                 {
                     _logger.LogWarning(
-                        "Update failed. Learning task not found. Id: {Id}",
+                        "UpdateLearningTaskById: Update failed. Learning task not found. Id: {Id}",
                         id);
 
                     return null;
@@ -164,25 +191,22 @@ namespace TraineeManagement.Services
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex,
-                        "Error while updating learning task.");
+                _logger.LogError(ex, $"Error while updating learning task with id {id}.");
                 throw new Exception($"Error while updating learning task with id {id}.", ex);
             }
 
         }
 
-        public async Task<LearningTask?> DeleteById(int id)
+        public async Task<LearningTask?> DeleteLearningById(int id)
         {
             try
             {
+                _logger.LogInformation($"DeleteLearningTaskById: deleting learning task with id {id}.");
                 LearningTask? learningTask = await _context.LearningTasks.FirstOrDefaultAsync(t => t.Id == id);
 
                 if (learningTask == null)
                 {
-                    _logger.LogWarning(
-                        "Delete failed. Learning task not found. Id: {Id}",
-                        id);
-
+                    _logger.LogWarning($"DeleteLearningTaskById: learning task with id {id} not found.");
                     return null;
                 }
 
@@ -190,26 +214,23 @@ namespace TraineeManagement.Services
 
                 await _context.SaveChangesAsync();
 
-                _logger.LogInformation(
-                    "LearningTask deleted successfully. Id: {Id}",
-                    learningTask.Id
-                );
+                _logger.LogInformation($"DeleteLearningTaskById: learning task with id {id} deleted successfully.");
 
                 return learningTask;
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex,
-                        "Error while deleting learning task.");
+                _logger.LogError(ex, $"DeleteLearningTaskById: error while deleting learning task with id {id}.");
                 throw new Exception($"Error while deleting learning task with id {id}.", ex);
             }
 
         }
 
-        public LearningTaskDTO ReturnDTO(LearningTask t)
+        public LearningTaskDTO ReturnLearningTaskDTO(LearningTask t)
         {
             try
             {
+                _logger.LogInformation($"ReturnLearningTaskDTO: converting learning task with id {t.Id} to DTO.");
                 LearningTaskDTO dto = new()
                 {
                     Title = t.Title,
@@ -222,6 +243,7 @@ namespace TraineeManagement.Services
             }
             catch (Exception ex)
             {
+                _logger.LogError(ex, $"ReturnLearningTaskDTO: error while converting learning task with id {t.Id} to DTO");
                 throw new Exception("Error while converting learning task to DTO.", ex);
             }
 

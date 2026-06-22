@@ -1,9 +1,15 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
+using System.Text.Json;
+using Microsoft.Extensions.Diagnostics.HealthChecks;
+using Microsoft.AspNetCore.Http;
+using System.Linq;
 using System.Text.Json.Serialization;
 using TraineeManagement.Services;
 using TraineeManagement.Data;
 using TraineeManagement.Middlewares;
 using TraineeManagement.Models;
+using TraineeManagement.Interfaces;
 
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
@@ -16,10 +22,14 @@ var builder = WebApplication.CreateBuilder(args);
 // Add services to the container.
 builder.Services.AddControllers();
 
+builder.Services.AddEndpointsApiExplorer();
+
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 // builder.Services.AddOpenApi();
 builder.Services.AddSwaggerGen(options =>
 {
+    options.CustomSchemaIds(type => type.FullName!.Replace("+", "."));
+
     options.AddSecurityDefinition("Bearer",
         new OpenApiSecurityScheme
         {
@@ -67,6 +77,22 @@ builder.Services.AddControllers()
     .AddJsonOptions(options =>
     {
         options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
+    });
+
+// Health checks: database and optional external-service checks
+builder.Services.AddHealthChecks()
+    .AddCheck<TraineeManagement.Services.HealthChecks.DatabaseHealthCheck>("database", tags: new[] { "ready" })
+    .AddCheck<TraineeManagement.Services.HealthChecks.RedisHealthCheck>("redis", tags: new[] { "ready" })
+    .AddCheck<TraineeManagement.Services.HealthChecks.ExternalServiceHealthCheck>("external-api", tags: new[] { "ready" });
+
+// Typed HTTP client for external health checks with a short default timeout
+builder.Services.AddHttpClient<TraineeManagement.Services.HealthChecks.ExternalServiceHealthCheck>()
+    .SetHandlerLifetime(TimeSpan.FromMinutes(5))
+    .ConfigureHttpClient((sp, client) =>
+    {
+        var cfg = sp.GetRequiredService<IConfiguration>();
+        var seconds = int.TryParse(cfg["Health:ExternalTimeoutSeconds"], out var s) ? s : 5;
+        client.Timeout = TimeSpan.FromSeconds(seconds);
     });
 
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
@@ -136,6 +162,39 @@ app.UseHttpsRedirection();
 
 app.UseAuthentication();
 app.UseAuthorization();
+
+// liveness (simple)
+// Minimal API wrappers so Swagger/OpenAPI shows health endpoints
+app.MapGet("/health/live", () => Results.Ok(new { status = "Alive", timestamp = DateTime.UtcNow }))
+    .WithName("Liveness")
+    .WithTags("Health")
+    .Produces(200);
+
+// readiness (run registered 'ready' checks)
+app.MapGet("/health/ready", async (HealthCheckService hc, CancellationToken ct) =>
+{
+    var report = await hc.CheckHealthAsync(reg => reg.Tags.Contains("ready"), ct);
+    var result = new
+    {
+        status = report.Status.ToString(),
+        totalDuration = report.TotalDuration.TotalMilliseconds,
+        checks = report.Entries.Select(e => new
+        {
+            name = e.Key,
+            status = e.Value.Status.ToString(),
+            description = e.Value.Description,
+            duration = e.Value.Duration.TotalMilliseconds
+        })
+    };
+
+    return report.Status == HealthStatus.Healthy
+        ? Results.Ok(result)
+        : Results.Json(result, statusCode: StatusCodes.Status503ServiceUnavailable);
+})
+    .WithName("Readiness")
+    .WithTags("Health")
+    .Produces(200)
+    .Produces(StatusCodes.Status503ServiceUnavailable);
 
 app.MapControllers();
 

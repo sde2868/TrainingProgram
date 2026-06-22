@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using TraineeManagement.Models;
-using TraineeManagement.Services;
+using TraineeManagement.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 
 namespace TraineeManagement.Controllers
@@ -13,28 +13,28 @@ namespace TraineeManagement.Controllers
 
         [HttpGet]
         [Authorize]
-        public async Task<IActionResult> GetAll([FromQuery] string? search)
+        public async Task<IActionResult> GetAllReviews([FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10, [FromQuery] string? search = null, [FromQuery] ReviewStatus? status = null)
         {
-            return Ok(await it.GetAll(search));
+            return Ok(await it.GetAllReviews(pageNumber, pageSize, search, status));
         }
 
         [HttpGet("{id}")]
         [Authorize]
-        public async Task<IActionResult> GetById(int id)
+        public async Task<IActionResult> GetReviewById(int id)
         {
-            Review? review = await it.GetById(id);
+            Review? review = await it.GetReviewById(id);
             if (review == null)
             {
                 return NotFound(new { message = "Review not found!" });
             }
-            return Ok(it.ReturnDTO(review));
+            return Ok(it.ReturnReviewDTO(review));
         }
 
         [HttpPost]
         [Authorize]
-        public async Task<IActionResult> Create([FromBody] ReviewDTO dto)
+        public async Task<IActionResult> CreateReview([FromBody] ReviewDTO dto)
         {
-            Review review = await it.Create(dto);
+            Review review = await it.CreateReview(dto);
             return Ok(review);
         }
     }

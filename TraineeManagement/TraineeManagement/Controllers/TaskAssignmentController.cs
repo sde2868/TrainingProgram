@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using TraineeManagement.Models;
-using TraineeManagement.Services;
+using TraineeManagement.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 
 namespace TraineeManagement.Controllers
@@ -13,37 +13,37 @@ namespace TraineeManagement.Controllers
 
         [HttpGet]
         [Authorize]
-        public async Task<IActionResult> GetAll([FromQuery] string? search)
+        public async Task<IActionResult> GetAllTaskAssignments([FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10, [FromQuery] string? search = null, [FromQuery] TaskAssignmentStatus? status = null)
         {
-            return Ok(await it.GetAll(search));
+            return Ok(await it.GetAllTaskAssignments(pageNumber, pageSize, search, status));
         }
 
         [HttpGet("{id}")]
         [Authorize]
-        public async Task<IActionResult> GetById(int id)
+        public async Task<IActionResult> GetTaskAssignmentById(int id)
         {
-            TaskAssignment? taskAssignment = await it.GetById(id);
+            TaskAssignment? taskAssignment = await it.GetTaskAssignmentById(id);
             if (taskAssignment == null)
             {
                 return NotFound(new { message = "TaskAssignment not found!" });
             }
-            return Ok(it.ReturnDTO(taskAssignment));
+            return Ok(it.ReturnTaskAssignmentDTO(taskAssignment));
         }
 
         [HttpPost]
         [Authorize]
-        public async Task<IActionResult> Create([FromBody] TaskAssignmentDTO dto)
+        public async Task<IActionResult> CreateTaskAssignment([FromBody] TaskAssignmentDTO dto)
         {
-            TaskAssignment taskAssignment = await it.Create(dto);
+            TaskAssignment taskAssignment = await it.CreateTaskAssignment(dto);
             return Ok(taskAssignment);
         }
 
         [HttpPut("{id}/status")]
         [Authorize]
-        public async Task<IActionResult> Put(int id, [FromBody] TaskAssignmentStatus status)
+        public async Task<IActionResult> UpdateTaskAssignmentStatus(int id, [FromBody] TaskAssignmentStatus status)
         {
-            TaskAssignment? taskAssignment = await it.Put(id, status);
-            return Ok(it.ReturnDTO(taskAssignment));
+            TaskAssignment? taskAssignment = await it.UpdateTaskAssignmentStatus(id, status);
+            return Ok(it.ReturnTaskAssignmentDTO(taskAssignment));
         }
     }
 }

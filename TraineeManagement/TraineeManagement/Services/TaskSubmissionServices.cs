@@ -1,6 +1,7 @@
 using TraineeManagement.Models;
 using Microsoft.EntityFrameworkCore;
 using TraineeManagement.Data;
+using TraineeManagement.Interfaces;
 
 namespace TraineeManagement.Services
 {
@@ -35,66 +36,93 @@ namespace TraineeManagement.Services
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex,
-                        "Error while seeding task submission data.");
+                _logger.LogError(ex, "Error while seeding task submission data.");
                 throw new Exception($"Error while seeding task submission data.", ex);
             }
         }
 
-        public async Task<List<TaskSubmission>> GetAll(string? search)
-        { // TaskAssignmentId SubmissionUrl Notes SubmittedDate Status
+        public async Task<PaginationDTO<TaskSubmissionDTO>> GetAllTaskSubmissions(int pageNumber = 1, int pageSize = 10, string? search = null, TaskSubmissionStatus? status = null)
+        {
             try
             {
-                List<TaskSubmission> taskSubmissions = await _context.TaskSubmissions.ToListAsync();
+                _logger.LogInformation($"GetAllTaskSubmissions: filtering taks submissions by search {search}.");
+                var query = _context.TaskSubmissions.AsQueryable();
 
                 if (!string.IsNullOrWhiteSpace(search))
                 {
                     search = search.ToLower();
 
-                    taskSubmissions = taskSubmissions.Where(t =>
-                        t.Status.ToString().ToLower().Contains(search) ||
+                    query = query.Where(t =>
                         t.SubmissionUrl.ToLower().Contains(search) ||
                         t.Notes.ToLower().Contains(search)
-                    ).ToList();
+                    );
                 }
 
-                _logger.LogInformation($"task submissions ({taskSubmissions.Count}) fetched successfully.");
+                // Status filter
+                if (status.HasValue)
+                {
+                    query = query.Where(t => t.Status.Equals(status.Value));
+                }
 
-                return taskSubmissions;
+                // Total count before pagination
+                var totalRecords = await query.CountAsync();
+
+                // Pagination using Skip and Take
+                var taskSubmissions = await query
+                    .Skip((pageNumber - 1) * pageSize)
+                    .Take(pageSize)
+                    .Select(t => new TaskSubmissionDTO
+                    {
+                        // id = t.id,
+                        SubmissionUrl = t.SubmissionUrl,
+                        Notes = t.Notes,
+                        SubmittedDate = t.SubmittedDate,
+                        Status = t.Status,
+                    })
+                    .ToListAsync();
+
+                _logger.LogInformation($"GetAllTaskSubmissions: task submissions ({totalRecords}) fetched successfully.");
+
+                return new PaginationDTO<TaskSubmissionDTO>
+                {
+                    PageNumber = pageNumber,
+                    PageSize = pageSize,
+                    TotalRecords = totalRecords,
+                    Data = taskSubmissions
+                };
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error fetching task submissions.");
+                _logger.LogError(ex, $"GetAllTaskSubmissions: error fetching task submissions with search {search}.");
                 throw new Exception($"Error while deleting task submissions.", ex);
             }
         }
 
-        public async Task<TaskSubmission?> GetById(int id)
+        public async Task<TaskSubmission?> GetTaskSubmissionById(int id)
         {
             try
             {
+                _logger.LogInformation($"GetTaskSubmissionById: fectching task submission by id {id}.");
                 TaskSubmission? taskSubmission = await _context.TaskSubmissions.Include(taskSubmission => taskSubmission.Reviews).FirstOrDefaultAsync(t => t.Id == id);
                 if (taskSubmission == null)
                 {
-                    _logger.LogWarning(
-                        "TaskSubmission not found. Id: {Id}",
-                        id);
+                    _logger.LogWarning($"GetTaskSubmissionById: task submission not found. Id: {id}");
                 }
                 return taskSubmission;
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex,
-                        "Error while fetching task submission.");
+                _logger.LogError(ex, $"GetTaskSubmissionById: error while fetching task submission with id {id}.");
                 throw new Exception($"Error while feetching task submission with id {id}.", ex);
             }
 
         }
 
-        public async Task<TaskSubmission> Create(TaskSubmissionDTO dto)
+        public async Task<TaskSubmission> CreateTaskSubmission(TaskSubmissionDTO dto)
         {
             try
             {
+                _logger.LogInformation($"CreateTaskSubmission: creating new task submission.");
                 // Validate FK
                 if (!await _context.TaskAssignments.AnyAsync(x => x.Id == dto.TaskAssignmentId))
                     throw new Exception("TaskAssginment does not exist");
@@ -117,27 +145,23 @@ namespace TraineeManagement.Services
 
                 await _context.SaveChangesAsync();
 
-                _logger.LogInformation(
-                    "task submission created successfully. Id: {Id}",
-                    taskSubmission.Id
-                );
+                _logger.LogInformation($"CreateTaskSubmission: task submission created successfully. Id: {taskSubmission.Id}");
 
                 return taskSubmission;
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex,
-                        "Error while creating task submission.");
-
+                _logger.LogError(ex, "CreateTaskSubmission: error while creating task submission.");
                 throw new Exception($"Error while creating task submission.", ex);
             }
 
         }
 
-        public TaskSubmissionDTO ReturnDTO(TaskSubmission t)
+        public TaskSubmissionDTO ReturnTaskSubmissionDTO(TaskSubmission t)
         {
             try
             {
+                _logger.LogInformation($"ReturnTaskSubmissionDTO: converting task submission with id {t.Id} to DTO.");
                 TaskSubmissionDTO dto = new()
                 {
                     TaskAssignmentId = t.TaskAssignmentId,
@@ -147,10 +171,10 @@ namespace TraineeManagement.Services
                     Notes = t.Notes
                 };
                 return dto;
-
             }
             catch (Exception ex)
             {
+                _logger.LogError($"ReturnTaskSubmissionDTO: error while converting task submission with id {t.Id} to dto.");
                 throw new Exception("Error while converting task submission to DTO.", ex);
             }
 

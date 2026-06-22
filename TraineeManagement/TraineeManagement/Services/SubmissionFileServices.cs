@@ -4,6 +4,7 @@ using TraineeManagement.Data;
 using TraineeManagement.Exceptions;
 using TraineeManagement.Models;
 using System.Security.Claims;
+using TraineeManagement.Interfaces;
 
 namespace TraineeManagement.Services;
 

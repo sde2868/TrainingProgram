@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using TraineeManagement.Services;
+using TraineeManagement.Interfaces;
 
 namespace TraineeManagement.Controllers;
 

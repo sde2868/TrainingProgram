@@ -1,5 +1,6 @@
 using Microsoft.Extensions.Options;
 using TraineeManagement.Models;
+using TraineeManagement.Interfaces;
 
 namespace TraineeManagement.Services;
 
@@ -23,6 +24,7 @@ public class LocalFileStorageServices : IFileStorageService
         string fileExtension,
         CancellationToken cancellationToken = default)
     {
+        _logger.LogInformation($"SaveAsync: saving file with extension {fileExtension}.");
         var storageName =
             $"{Guid.NewGuid():N}{fileExtension}";
 
@@ -50,6 +52,7 @@ public class LocalFileStorageServices : IFileStorageService
         string storageName,
         CancellationToken cancellationToken = default)
     {
+        _logger.LogInformation($"OpenReadAsync: opening {storageName}.");
         var filePath =
             Path.Combine(_rootPath, storageName);
 
@@ -67,6 +70,7 @@ public class LocalFileStorageServices : IFileStorageService
         string storageName,
         CancellationToken cancellationToken = default)
     {
+        _logger.LogInformation($"ExistsAsync: checking {storageName}.");
         var filePath =
             Path.Combine(_rootPath, storageName);
 
@@ -78,6 +82,7 @@ public class LocalFileStorageServices : IFileStorageService
         string storageName,
         CancellationToken cancellationToken = default)
     {
+        _logger.LogInformation($"DeleteAsync: deleting {storageName}.");
         var filePath =
             Path.Combine(_rootPath, storageName);
 

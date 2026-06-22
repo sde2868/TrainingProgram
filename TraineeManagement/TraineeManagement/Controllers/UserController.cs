@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using TraineeManagement.Models;
-using TraineeManagement.Services;
+using TraineeManagement.Interfaces;
 
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
@@ -81,44 +81,44 @@ namespace TraineeManagement.Controllers
 
         [HttpGet]
         [Authorize(Roles = "Admin")]
-        public async Task<IActionResult> GetAll([FromQuery] string? search)
+        public async Task<IActionResult> GetAllUsers([FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10, [FromQuery] string? search = null, [FromQuery] UserRole? role = null)
         {
-            return Ok(await iuser.GetAll(search));
+            return Ok(await iuser.GetAllUsers(pageNumber, pageSize, search, role));
         }
 
         [HttpGet("{id}")]
         [Authorize]
-        public async Task<IActionResult> GetById(int id)
+        public async Task<IActionResult> GetUserById(int id)
         {
-            User? user = await iuser.GetById(id);
+            User? user = await iuser.GetUserById(id);
             if (user == null)
             {
                 return NotFound(new { message = "User Not Found!" });
             }
-            return Ok(iuser.ReturnDTO(user));
+            return Ok(iuser.ReturnUserDTO(user));
         }
 
         [HttpPost]
         [Authorize(Roles = "Admin")]
-        public async Task<IActionResult> Create([FromBody] UserDTO dto)
+        public async Task<IActionResult> CreateUser([FromBody] UserDTO dto)
         {
-            User user = await iuser.Create(dto);
+            User user = await iuser.CreateUser(dto);
             return Ok(user);
         }
 
         [HttpPut("{id}")]
         [Authorize(Roles = "Admin")]
-        public async Task<IActionResult> Put(int id, [FromBody] UserDTO dto)
+        public async Task<IActionResult> UpdateUserById(int id, [FromBody] UserDTO dto)
         {
-            User? user = await iuser.Put(id, dto);
-            return Ok(iuser.ReturnDTO(user));
+            User? user = await iuser.UpdateUserById(id, dto);
+            return Ok(iuser.ReturnUserDTO(user));
         }
 
         [HttpDelete("{id}")]
         [Authorize(Roles = "Admin")]
-        public async Task<IActionResult> DeleteById(int id)
+        public async Task<IActionResult> DeleteUserById(int id)
         {
-            User? user = await iuser.DeleteById(id);
+            User? user = await iuser.DeleteUserById(id);
             return NoContent();
         }
     }
