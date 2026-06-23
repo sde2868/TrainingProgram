@@ -2,6 +2,7 @@ using TraineeManagement.Models;
 using Microsoft.EntityFrameworkCore;
 using TraineeManagement.Data;
 using TraineeManagement.Interfaces;
+using TraineeManagement.Constants;
 
 namespace TraineeManagement.Services
 {
@@ -9,13 +10,15 @@ namespace TraineeManagement.Services
     {
         private readonly AppDbContext _context;
         private readonly ILogger<TaskAssignmentServices> _logger;
-        public TaskAssignmentServices(AppDbContext context, ILogger<TaskAssignmentServices> logger)
+        private readonly ICacheService _cache;
+        public TaskAssignmentServices(AppDbContext context, ILogger<TaskAssignmentServices> logger, ICacheService cache)
         {
 
             try
             {
                 _context = context;
                 _logger = logger;
+                _cache = cache;
                 // // seed data
                 // if (!_context.TaskAssignments.Any())
                 // {
@@ -101,14 +104,28 @@ namespace TraineeManagement.Services
 
         public async Task<TaskAssignment?> GetTaskAssignmentById(int id)
         {
+            string cacheKey = CacheKeys.TaskAssignment(id);
             try
             {
                 _logger.LogInformation($"GetTaskAssignemntById: fetching task assignment with id {id}.");
-                TaskAssignment? taskAssignment = await _context.TaskAssignments.Include(t => t.Submissions).FirstOrDefaultAsync(t => t.Id == id);
+                TaskAssignment? cached = await _cache.GetAsync<TaskAssignment>(cacheKey);
+                if (cached != null)
+                {
+                    _logger.LogInformation($"GetTaskAssignemntById: returned task assignment {id} from cache.");
+                    return cached;
+                }
+
+                TaskAssignment? taskAssignment = await _context.TaskAssignments
+                    .AsNoTracking()
+                    // .Include(t => t.Submissions)
+                    .FirstOrDefaultAsync(t => t.Id == id);
                 if (taskAssignment == null)
                 {
                     _logger.LogWarning($"GetTaskAssignemntById: task assignment not found. Id: {id}");
+                    return null;
                 }
+
+                await _cache.SetAsync(cacheKey, taskAssignment);
                 return taskAssignment;
             }
             catch (Exception ex)
@@ -168,6 +185,7 @@ namespace TraineeManagement.Services
 
         public async Task<TaskAssignment?> UpdateTaskAssignmentStatus(int id, TaskAssignmentStatus status)
         {
+            string cacheKey = CacheKeys.TaskAssignment(id);
             try
             {
                 _logger.LogInformation($"UpdateTaskAssignmentStatus: updating status of task assignment id: {id}.");
@@ -176,31 +194,14 @@ namespace TraineeManagement.Services
                 if (taskAssignment == null)
                 {
                     _logger.LogWarning($"UpdateTaskAssignmentStatus: update failed. Task assignment not found. Id: {id}");
+                    await _cache.RemoveAsync(cacheKey);
                     return null;
                 }
 
-                // if (!await _context.Trainees.AnyAsync(x => x.id == dto.TraineeId))
-                //     throw new Exception("Trainee does not exist");
-
-                // if (!await _context.Mentors.AnyAsync(x => x.Id == dto.MentorId))
-                //     throw new Exception("Mentor does not exist");
-
-                // if (!await _context.LearningTasks.AnyAsync(x => x.Id == dto.LearningTaskId))
-                //     throw new Exception("LearningTask does not exist");
-
-                // if (dto.DueDate < dto.AssignedDate)
-                //     throw new Exception("DueDate cannot be before AssignedDate");
-
-                // taskAssignment.TraineeId = dto.TraineeId;
-                // taskAssignment.MentorId = dto.MentorId;
-                // taskAssignment.LearningTaskId = dto.LearningTaskId;
-                // taskAssignment.Status = dto.Status;
-                // taskAssignment.AssignedDate = dto.AssignedDate;
-                // taskAssignment.DueDate = dto.DueDate;
-                // taskAssignment.Remarks = dto.Remarks;
                 taskAssignment.Status = status;
 
                 await _context.SaveChangesAsync();
+                await _cache.RemoveAsync(cacheKey);
 
                 _logger.LogInformation($"UpdateTaskAssignmentStatus: task assignment updated successfully. Id: {id}");
                 return taskAssignment;
@@ -234,7 +235,6 @@ namespace TraineeManagement.Services
                 _logger.LogError($"ReturnTaskAssignmentDTO: error converting review with id {t.Id} to DTO.");
                 throw new Exception("Error while converting task assignment to DTO.", ex);
             }
-
         }
     }
 }

@@ -2,6 +2,7 @@ using TraineeManagement.Models;
 using Microsoft.EntityFrameworkCore;
 using TraineeManagement.Data;
 using TraineeManagement.Interfaces;
+using TraineeManagement.Constants;
 
 namespace TraineeManagement.Services
 {
@@ -9,13 +10,15 @@ namespace TraineeManagement.Services
     {
         private readonly AppDbContext _context;
         private readonly ILogger<TaskSubmissionServices> _logger;
-        public TaskSubmissionServices(AppDbContext context, ILogger<TaskSubmissionServices> logger)
+        private readonly ICacheService _cache;
+        public TaskSubmissionServices(AppDbContext context, ILogger<TaskSubmissionServices> logger, ICacheService cache)
         {
 
             try
             {
                 _context = context;
                 _logger = logger;
+                _cache = cache;
                 // // seed data
                 // if (!_context.TaskSubmissions.Any())
                 // {
@@ -100,14 +103,28 @@ namespace TraineeManagement.Services
 
         public async Task<TaskSubmission?> GetTaskSubmissionById(int id)
         {
+            string cacheKey = CacheKeys.TaskSubmission(id);
             try
             {
-                _logger.LogInformation($"GetTaskSubmissionById: fectching task submission by id {id}.");
-                TaskSubmission? taskSubmission = await _context.TaskSubmissions.Include(taskSubmission => taskSubmission.Reviews).FirstOrDefaultAsync(t => t.Id == id);
+                _logger.LogInformation($"GetTaskSubmissionById: fetching task submission by id {id}.");
+                TaskSubmission? cached = await _cache.GetAsync<TaskSubmission>(cacheKey);
+                if (cached != null)
+                {
+                    _logger.LogInformation($"GetTaskSubmissionById: returned task submission {id} from cache.");
+                    return cached;
+                }
+
+                TaskSubmission? taskSubmission = await _context.TaskSubmissions
+                    .AsNoTracking()
+                    // .Include(taskSubmission => taskSubmission.Reviews)
+                    .FirstOrDefaultAsync(t => t.Id == id);
                 if (taskSubmission == null)
                 {
                     _logger.LogWarning($"GetTaskSubmissionById: task submission not found. Id: {id}");
+                    return null;
                 }
+
+                await _cache.SetAsync(cacheKey, taskSubmission);
                 return taskSubmission;
             }
             catch (Exception ex)
@@ -177,7 +194,6 @@ namespace TraineeManagement.Services
                 _logger.LogError($"ReturnTaskSubmissionDTO: error while converting task submission with id {t.Id} to dto.");
                 throw new Exception("Error while converting task submission to DTO.", ex);
             }
-
         }
     }
 }
