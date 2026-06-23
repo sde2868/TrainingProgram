@@ -10,13 +10,15 @@ namespace TraineeManagement.Services
     {
         private readonly AppDbContext _context;
         private readonly ILogger<TraineeServices> _logger;
-        public TraineeServices(AppDbContext context, ILogger<TraineeServices> logger)
+        private readonly ICacheService _cache;
+        public TraineeServices(AppDbContext context, ILogger<TraineeServices> logger, ICacheService cache)
         {
 
             try
             {
                 _context = context;
                 _logger = logger;
+                _cache = cache;
                 // seed data
                 if (!_context.Trainees.Any())
                 {
@@ -104,15 +106,27 @@ namespace TraineeManagement.Services
 
         public async Task<Trainee?> GetTraineeById(int id)
         {
+            string cacheKey = CacheKeys.Trainee(id);
             try
             {
                 _logger.LogInformation($"GetTraineeById: fetching trainee by id {id}.");
-                Trainee? trainee = await _context.Trainees.FirstOrDefaultAsync(t => t.id == id);
+                Trainee? cached = await _cache.GetAsync<Trainee>(cacheKey);
+                if (cached != null)
+                {
+                    _logger.LogInformation($"GetTraineeById: returned trainee {id} from cache.");
+                    return cached;
+                }
+
+                Trainee? trainee = await _context.Trainees
+                    .AsNoTracking()
+                    .FirstOrDefaultAsync(t => t.id == id);
                 if (trainee == null)
                 {
                     _logger.LogWarning($"GetTraineeById: trainee not found. Id: {id}");
                     return null;
                 }
+
+                await _cache.SetAsync(cacheKey, trainee);
                 return trainee;
             }
             catch (Exception ex)
@@ -161,6 +175,7 @@ namespace TraineeManagement.Services
 
         public async Task<Trainee?> UpdateTrainee(int id, TraineeDTO dto)
         {
+            string cacheKey = CacheKeys.Trainee(id);
             try
             {
                 _logger.LogInformation($"UpdateTrainee: updating trainee with id {id}.");
@@ -172,6 +187,7 @@ namespace TraineeManagement.Services
                         "Update failed. Trainee not found. Id: {Id}",
                         id);
 
+                    await _cache.RemoveAsync(cacheKey);
                     return null;
                 }
 
@@ -183,6 +199,7 @@ namespace TraineeManagement.Services
                 trainee.UpdatedAt = DateTime.UtcNow;
 
                 await _context.SaveChangesAsync();
+                await _cache.RemoveAsync(cacheKey);
 
                 _logger.LogInformation($"UpdateTrainee: trainee updated successfully. Id: {id}");
 
@@ -198,6 +215,7 @@ namespace TraineeManagement.Services
 
         public async Task<Trainee?> DeleteTraineeById(int id)
         {
+            string cacheKey = CacheKeys.Trainee(id);
             try
             {
                 _logger.LogInformation($"DeleteTraineeById: deleting trainee with id {id}.");
@@ -206,12 +224,14 @@ namespace TraineeManagement.Services
                 if (trainee == null)
                 {
                     _logger.LogWarning($"DeleteTraineeById: trainee not found. Id: {id}.");
+                    await _cache.RemoveAsync(cacheKey);
                     return null;
                 }
 
                 _context.Trainees.Remove(trainee);
 
                 await _context.SaveChangesAsync();
+                await _cache.RemoveAsync(cacheKey);
 
                 _logger.LogInformation($"DeleteTraineeById: trainee deleted successfully. Id: {id}");
 

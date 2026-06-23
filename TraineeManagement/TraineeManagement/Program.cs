@@ -60,6 +60,7 @@ builder.Services.AddSwaggerGen(options =>
 
 builder.Services.Configure<StorageSettings>(builder.Configuration.GetSection("Storage"));
 builder.Services.Configure<FileUploadSettings>(builder.Configuration.GetSection("FileStorage"));
+builder.Services.Configure<RedisSettings>(builder.Configuration.GetSection("Redis"));
 // builder.Services.AddSingleton<ITrainee, TraineeServices>();
 builder.Services.AddScoped<ITrainee, TraineeServices>();
 builder.Services.AddScoped<IUser, UserServices>();
@@ -70,6 +71,7 @@ builder.Services.AddScoped<ITaskSubmission, TaskSubmissionServices>();
 builder.Services.AddScoped<IReview, ReviewServices>();
 builder.Services.AddScoped<IFileStorageService, LocalFileStorageServices>();
 builder.Services.AddScoped<ISubmissionFileService, SubmissionFileServices>();
+builder.Services.AddScoped<ICacheService, RedisCacheServices>();
 
 builder.Services.AddHttpContextAccessor();
 
@@ -96,6 +98,12 @@ builder.Services.AddHttpClient<TraineeManagement.Services.HealthChecks.ExternalS
     });
 
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+
+builder.Services.AddStackExchangeRedisCache(options =>
+{
+    options.Configuration =
+        builder.Configuration["Redis:ConnectionString"];
+});
 
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString)));
