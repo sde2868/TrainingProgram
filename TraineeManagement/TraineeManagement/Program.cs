@@ -61,7 +61,9 @@ builder.Services.AddSwaggerGen(options =>
 builder.Services.Configure<StorageSettings>(builder.Configuration.GetSection("Storage"));
 builder.Services.Configure<FileUploadSettings>(builder.Configuration.GetSection("FileStorage"));
 builder.Services.Configure<RedisSettings>(builder.Configuration.GetSection("Redis"));
-// builder.Services.AddSingleton<ITrainee, TraineeServices>();
+builder.Services.Configure<RabbitMqSettings>(builder.Configuration.GetSection("RabbitMq"));
+
+builder.Services.AddSingleton<RabbitMqPublisher>();
 builder.Services.AddScoped<ITrainee, TraineeServices>();
 builder.Services.AddScoped<IUser, UserServices>();
 builder.Services.AddScoped<IMentor, MentorServices>();
@@ -72,6 +74,7 @@ builder.Services.AddScoped<IReview, ReviewServices>();
 builder.Services.AddScoped<IFileStorageService, LocalFileStorageServices>();
 builder.Services.AddScoped<ISubmissionFileService, SubmissionFileServices>();
 builder.Services.AddScoped<ICacheService, RedisCacheServices>();
+builder.Services.AddScoped<IMessagePublisher, RabbitMqPublisher>();
 
 builder.Services.AddHttpContextAccessor();
 

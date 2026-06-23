@@ -9,7 +9,10 @@ services:
     image: docker-registry-002.zeuslearning.com/zeuslearning/redis:7.4.5
     container_name: redis
     ports:
-    - "6379:6379"
+      - "6379:6379"
+    networks:
+      - trainee_management_network
+
   mysql:
     image: docker-registry-002.zeuslearning.com/zeuslearning/mysql:8.0.15
     container_name: mysql
@@ -19,7 +22,28 @@ services:
     ports:
       - "3306:3306"
     volumes:
-    - mysql_data:/var/lib/mysql
+      - mysql_data:/var/lib/mysql
+    networks:
+      - trainee_management_network
+
+  rabbitmq:
+    image: docker-registry-002.zeuslearning.com/zeuslearning/rabbitmq:3-management
+    container_name: rabbitmq
+    hostname: rabbitmq
+    environment:
+      RABBITMQ_DEFAULT_USER: admin
+      RABBITMQ_DEFAULT_PASS: admin123
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    networks:
+      - trainee_management_network
 
 volumes:
   mysql_data:
+  rabbitmq_data:
+
+networks:
+  trainee_management_network:

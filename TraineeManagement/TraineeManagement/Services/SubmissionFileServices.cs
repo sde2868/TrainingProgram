@@ -15,18 +15,21 @@ public class SubmissionFileServices : ISubmissionFileService
     private readonly ILogger<SubmissionFileServices> _logger;
     private readonly FileUploadSettings _fileUploadSettings;
     private readonly IHttpContextAccessor _httpContextAccessor;
+    private readonly IMessagePublisher _messagePublisher;
     public SubmissionFileServices(
         AppDbContext context,
         IFileStorageService fileStorage,
         ILogger<SubmissionFileServices> logger,
         IOptions<FileUploadSettings> fileUploadOptions,
-        IHttpContextAccessor httpContextAccessor)
+        IHttpContextAccessor httpContextAccessor,
+        IMessagePublisher messagePublisher)
     {
         _context = context;
         _fileStorage = fileStorage;
         _logger = logger;
         _fileUploadSettings = fileUploadOptions.Value;
         _httpContextAccessor = httpContextAccessor;
+        _messagePublisher = messagePublisher;
     }
 
     private int GetCurrentUserId()
@@ -128,6 +131,17 @@ public class SubmissionFileServices : ISubmissionFileService
             submissionFile.Id,
             submissionId);
 
+        var message = new SubmissionProcessingRequested
+        {
+            MessageId = Guid.NewGuid(),
+            CorrelationId = Guid.NewGuid().ToString(),
+            TaskSubmissionId = submissionId,
+            SubmissionFileId = submissionFile.Id,
+            RequestedAt = DateTime.UtcNow
+        };
+
+        await _messagePublisher.PublishSubmissionProcessingAsync(message);
+        _logger.LogInformation($"UploadAsync: successfully published message {message.MessageId} for task submission {message.TaskSubmissionId}.");
         return ReturnDTO(submissionFile);
     }
 
