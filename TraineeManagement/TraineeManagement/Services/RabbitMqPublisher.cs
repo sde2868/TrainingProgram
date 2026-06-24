@@ -4,6 +4,7 @@ using RabbitMQ.Client;
 using TraineeManagement.Models;
 using TraineeManagement.Interfaces;
 using Microsoft.Extensions.Options;
+using TraineeManagement.Services;
 
 public class RabbitMqPublisher : IMessagePublisher
 {
@@ -38,14 +39,20 @@ public class RabbitMqPublisher : IMessagePublisher
         await using var channel =
             await connection.CreateChannelAsync(cancellationToken: cancellationToken);
 
+        // var queueArgs = new Dictionary<string, object?>
+        // {
+        //     ["x-dead-letter-exchange"] = "submission-processing-dlx",
+        //     ["x-dead-letter-routing-key"] = "submission-processing"
+        // };
 
-        await channel.QueueDeclareAsync(
-            queue: QueueNames.SubmissionProcessing,
-            durable: true,
-            exclusive: false,
-            autoDelete: false,
-            arguments: null,
-            cancellationToken: cancellationToken);
+        // await channel.QueueDeclareAsync(
+        //     queue: QueueNames.SubmissionProcessing,
+        //     durable: true,
+        //     exclusive: false,
+        //     autoDelete: false,
+        //     arguments: queueArgs,
+        //     cancellationToken: cancellationToken);
+        await RabbitMqTopologyConfigurator.ConfigureAsync(channel, cancellationToken);
 
         var json = JsonSerializer.Serialize(message);
 

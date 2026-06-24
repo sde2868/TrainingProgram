@@ -17,6 +17,7 @@ namespace TraineeManagement.Data
         public DbSet<TaskSubmission> TaskSubmissions { get; set; }
         public DbSet<Review> Reviews { get; set; }
         public DbSet<SubmissionFile> SubmissionFiles { get; set; }
+        public DbSet<ProcessingJob> ProcessingJobs { get; set; }
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
@@ -26,6 +27,12 @@ namespace TraineeManagement.Data
             modelBuilder.Entity<User>().HasIndex(u => u.Email).IsUnique();
 
             modelBuilder.Entity<Mentor>().HasIndex(m => m.Email).IsUnique();
+
+            modelBuilder.Entity<ProcessingJob>().HasIndex(x => x.MessageId).IsUnique();
+
+            modelBuilder.Entity<ProcessingJob>().HasIndex(x => x.CorrelationId);
+
+            modelBuilder.Entity<ProcessingJob>().HasIndex(x => x.Status);
 
             // Seed Admin user
             modelBuilder.Entity<User>().HasData(new User
@@ -78,6 +85,20 @@ namespace TraineeManagement.Data
                 .HasOne(r => r.Mentor)
                 .WithMany()
                 .HasForeignKey(r => r.MentorId);
+
+            // ProcessingJob -> TaskSubmission
+            modelBuilder.Entity<ProcessingJob>()
+                .HasOne(x => x.Submission)
+                .WithMany()
+                .HasForeignKey(x => x.SubmissionId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // ProcessingJob -> SubmissionFIle
+            modelBuilder.Entity<ProcessingJob>()
+                .HasOne(x => x.SubmissionFile)
+                .WithMany()
+                .HasForeignKey(x => x.SubmissionFileId)
+                .OnDelete(DeleteBehavior.Restrict);
         }
     }
 }

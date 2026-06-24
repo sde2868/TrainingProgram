@@ -2,24 +2,35 @@ using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
 using System.Text;
 using System.Text.Json;
-using SubmissionProcessor.Models;
- 
+using TraineeManagement.Models;
+using TraineeManagement.Services;
+using SubmissionProcessor.Services;
+using SubmissionProcessor.Exceptions;
+
 namespace SubmissionProcessor;
- 
+
 public class Worker : BackgroundService
 {
     private readonly IConfiguration _config;
     private readonly ILogger<Worker> _logger;
- 
-    private IConnection _connection;
-    private IModel _channel;
- 
-    public Worker(IConfiguration config, ILogger<Worker> logger)
+    private readonly IServiceScopeFactory _scopeFactory;
+
+    private IConnection? _connection;
+    private IChannel? _channel;
+
+    public Worker(
+        IConfiguration config,
+        ILogger<Worker> logger,
+        IServiceScopeFactory scopeFactory)
     {
         _config = config;
         _logger = logger;
- 
-        var factory = new ConnectionFactory()
+        _scopeFactory = scopeFactory;
+    }
+
+    protected override async Task ExecuteAsync(CancellationToken stoppingToken)
+    {
+        var factory = new ConnectionFactory
         {
             HostName = _config["RabbitMQ:HostName"],
             Port = int.Parse(_config["RabbitMQ:Port"] ?? "5672"),
@@ -27,64 +38,152 @@ public class Worker : BackgroundService
             Password = _config["RabbitMQ:Password"],
             VirtualHost = _config["RabbitMQ:VirtualHost"] ?? "/"
         };
- 
-        _connection = factory.CreateConnection();
-        _channel = _connection.CreateModel();
- 
-        var queue = _config["RabbitMQ:QueueName"];
- 
-        _channel.QueueDeclare(
-            queue: queue,
-            durable: true,
-            exclusive: false,
-            autoDelete: false);
- 
-        _channel.BasicQos(0, 1, false);
-    }
- 
-    protected override Task ExecuteAsync(CancellationToken stoppingToken)
-    {
-        var queue = _config["RabbitMq:QueueName"];
- 
-        var consumer = new EventingBasicConsumer(_channel);
- 
-        consumer.Received += async (model, ea) =>
+
+        _connection = await factory.CreateConnectionAsync(stoppingToken);
+        _channel = await _connection.CreateChannelAsync(cancellationToken: stoppingToken);
+
+        // var queue = _config["RabbitMQ:QueueName"];
+        // var deadLetterExchange = _config["RabbitMQ:DeadLetterExchange"];
+        // var deadLetterQueue = _config["RabbitMQ:DeadLetterQueue"];
+        var queue = RabbitMqTopology.ProcessingQueue;
+
+        if (string.IsNullOrWhiteSpace(queue))
+        {
+            throw new InvalidOperationException("RabbitMQ: QueueName configuration is missing.");
+        }
+
+        // await _channel.ExchangeDeclareAsync(
+        //     exchange: deadLetterExchange!,
+        //     type: ExchangeType.Direct,
+        //     durable: true,
+        //     cancellationToken: stoppingToken);
+
+        // await _channel.QueueDeclareAsync(
+        //     queue: deadLetterQueue!,
+        //     durable: true,
+        //     exclusive: false,
+        //     autoDelete: false,
+        //     cancellationToken: stoppingToken);
+
+        // await _channel.QueueBindAsync(
+        //     queue: deadLetterQueue!,
+        //     exchange: deadLetterExchange!,
+        //     routingKey: queue!,
+        //     cancellationToken: stoppingToken);
+        
+        // var queueArgs = new Dictionary<string, object?>
+        // {
+        //     ["x-dead-letter-exchange"] = deadLetterExchange,
+        //     ["x-dead-letter-routing-key"] = queue
+        // };
+
+        // await _channel.QueueDeclareAsync(
+        //     queue: queue,
+        //     durable: true,
+        //     exclusive: false,
+        //     autoDelete: false,
+        //     arguments: queueArgs,
+        //     cancellationToken: stoppingToken);
+        await RabbitMqTopologyConfigurator.ConfigureAsync(_channel, stoppingToken);
+
+        await _channel.BasicQosAsync(
+            prefetchSize: 0,
+            prefetchCount: 1,
+            global: false,
+            cancellationToken: stoppingToken);
+
+        var consumer = new AsyncEventingBasicConsumer(_channel);
+
+        consumer.ReceivedAsync += async (sender, ea) =>
         {
             try
             {
                 var body = ea.Body.ToArray();
                 var json = Encoding.UTF8.GetString(body);
- 
+
                 var message = JsonSerializer.Deserialize<SubmissionProcessingRequested>(json);
- 
-                _logger.LogInformation(
-                    "Processing TaskSubmissionId: {SubmissionId}, FileId: {FileId}",
-                    message?.TaskSubmissionId,
-                    message?.SubmissionFileId
-                );
- 
-                await Task.Delay(2000);
-                _channel.BasicAck(ea.DeliveryTag, false);
+                if (message == null)
+                {
+                    throw new InvalidOperationException("Unable to deserialize message.");
+                }
+
+                _logger.LogInformation("Received message {MessageId} for SubmissionId {SubmissionId} and FileId {FileId}",
+                    message.MessageId,
+                    message.TaskSubmissionId,
+                    message.SubmissionFileId);
+
+                using var scope = _scopeFactory.CreateScope();
+
+                var processor = scope.ServiceProvider.GetRequiredService<ISubmissionProcessingService>();
+                await processor.ProcessAsync(message, stoppingToken);
+
+                await _channel.BasicAckAsync(
+                    deliveryTag: ea.DeliveryTag,
+                    multiple: false,
+                    cancellationToken: stoppingToken);
+
+                _logger.LogInformation("Successfully processed message {MessageId}",
+                    message.MessageId);
+            }
+            catch (RetryableProcessingException ex)
+            {
+                _logger.LogWarning(ex, "Retryable failure occurred");
+
+                await _channel.BasicNackAsync(
+                    deliveryTag: ea.DeliveryTag,
+                    multiple: false,
+                    requeue: true,
+                    cancellationToken: stoppingToken);
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Processing failed");
- 
-                _channel.BasicNack(ea.DeliveryTag, false, true);
+                if (_channel != null)
+                {
+                    await _channel.BasicNackAsync(
+                        deliveryTag: ea.DeliveryTag,
+                        multiple: false,
+                        requeue: false,
+                        cancellationToken: stoppingToken);
+                }
             }
         };
- 
-        _channel.BasicConsume(queue: queue, autoAck: false, consumer: consumer);
- 
-        _logger.LogInformation("✅ Worker started listening to queue: {Queue}", queue);
- 
-        return Task.CompletedTask;
+
+        await _channel.BasicConsumeAsync(
+            queue: queue,
+            autoAck: false,
+            consumer: consumer,
+            cancellationToken: stoppingToken);
+
+        _logger.LogInformation("Worker started listening to queue: {Queue}",
+            queue);
+
+        while (!stoppingToken.IsCancellationRequested)
+        {
+            await Task.Delay(1000, stoppingToken);
+        }
     }
- 
+
+    public override async Task StopAsync(CancellationToken cancellationToken)
+    {
+        if (_channel != null)
+        {
+            await _channel.CloseAsync(cancellationToken);
+        }
+
+        if (_connection != null)
+        {
+            await _connection.CloseAsync(cancellationToken);
+        }
+
+        await base.StopAsync(cancellationToken);
+    }
+
     public override void Dispose()
     {
-        _channel?.Close();
-        _connection?.Close();
+        _channel?.Dispose();
+        _connection?.Dispose();
+
         base.Dispose();
     }
 }

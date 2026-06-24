@@ -34,17 +34,13 @@ public class SubmissionFileServices : ISubmissionFileService
 
     private int GetCurrentUserId()
     {
-        var userIdClaim =
-            _httpContextAccessor.HttpContext?
+        var userIdClaim = _httpContextAccessor.HttpContext?
                 .User
                 .FindFirst(ClaimTypes.NameIdentifier);
-
         if (userIdClaim == null)
         {
-            throw new UnauthorizedAccessException(
-                "User id not found in token.");
+            throw new UnauthorizedAccessException("User id not found in token.");
         }
-
         return int.Parse(userIdClaim.Value);
     }
 
@@ -56,52 +52,36 @@ public class SubmissionFileServices : ISubmissionFileService
         _logger.LogInformation("Configured MaxFileSizeBytes: {Size}", _fileUploadSettings.MaxFileSizeBytes);
         _logger.LogInformation("Upload request received. File size: {Size}", file?.Length);
         var submission =
-            await _context.TaskSubmissions
-                .FirstOrDefaultAsync(
+            await _context.TaskSubmissions.FirstOrDefaultAsync(
                     x => x.Id == submissionId,
                     cancellationToken);
-
         if (submission == null)
         {
-            throw new KeyNotFoundException(
-                $"Submission with id {submissionId} not found.");
+            throw new KeyNotFoundException($"Submission with id {submissionId} not found.");
         }
-
         if (file == null)
         {
-            throw new ArgumentException(
-                "File is required.");
+            throw new ArgumentException("File is required.");
         }
-
         if (file.Length == 0)
         {
-            throw new ArgumentException(
-                "Empty files are not allowed.");
+            throw new ArgumentException("Empty files are not allowed.");
         }
-
         if (file.Length > _fileUploadSettings.MaxFileSizeBytes)
         {
-            throw new FileTooLargeException(
-                $"Maximum allowed file size is {_fileUploadSettings.MaxFileSizeBytes / (1024 * 1024)} MB.");
+            throw new FileTooLargeException($"Maximum allowed file size is {_fileUploadSettings.MaxFileSizeBytes / (1024 * 1024)} MB.");
             // throw new ArgumentException("TEST");
         }
 
-        string extension =
-            Path.GetExtension(file.FileName)
-                .ToLowerInvariant();
+        string extension = Path.GetExtension(file.FileName).ToLowerInvariant();
 
-        if (!_fileUploadSettings.AllowedExtensions
-                .Contains(extension))
+        if (!_fileUploadSettings.AllowedExtensions.Contains(extension))
         {
-            throw new ArgumentException(
-                $"Files with extension '{extension}' are not allowed.");
+            throw new ArgumentException($"Files with extension '{extension}' are not allowed.");
         }
-
-        await using var stream =
-            file.OpenReadStream();
-
-        string storageName =
-            await _fileStorage.SaveAsync(
+        await using var stream = file.OpenReadStream();
+        
+        string storageName = await _fileStorage.SaveAsync(
                 stream,
                 extension,
                 cancellationToken);
@@ -126,8 +106,7 @@ public class SubmissionFileServices : ISubmissionFileService
         await _context.SaveChangesAsync(
             cancellationToken);
 
-        _logger.LogInformation(
-            "Submission file uploaded successfully. FileId: {FileId}, SubmissionId: {SubmissionId}",
+        _logger.LogInformation("Submission file uploaded successfully. FileId: {FileId}, SubmissionId: {SubmissionId}",
             submissionFile.Id,
             submissionId);
 
@@ -140,8 +119,25 @@ public class SubmissionFileServices : ISubmissionFileService
             RequestedAt = DateTime.UtcNow
         };
 
+        var processingJob = new ProcessingJob
+        {
+            MessageId = message.MessageId,
+            CorrelationId = message.CorrelationId,
+            SubmissionId = submission.Id,
+            SubmissionFileId = submissionFile.Id,
+            Status = ProcessingJobStatus.Queued,
+            Attempts = 0,
+            CreatedAt = DateTime.UtcNow
+        };
+
+        _context.ProcessingJobs.Add(processingJob);
+
+        await _context.SaveChangesAsync(cancellationToken);
+
         await _messagePublisher.PublishSubmissionProcessingAsync(message);
+
         _logger.LogInformation($"UploadAsync: successfully published message {message.MessageId} for task submission {message.TaskSubmissionId}.");
+        
         return ReturnDTO(submissionFile);
     }
 
@@ -149,46 +145,35 @@ public class SubmissionFileServices : ISubmissionFileService
         int id,
         CancellationToken cancellationToken = default)
     {
-        var file =
-            await _context.SubmissionFiles
-                .FirstOrDefaultAsync(
+        var file = await _context.SubmissionFiles.FirstOrDefaultAsync(
                     x => x.Id == id,
                     cancellationToken);
 
-        return file == null
-            ? null
-            : ReturnDTO(file);
+        return file == null ? null : ReturnDTO(file);
     }
 
     public async Task<(Stream Stream, SubmissionFile File)> DownloadAsync(
         int id,
         CancellationToken cancellationToken = default)
     {
-        var file =
-            await _context.SubmissionFiles
-                .FirstOrDefaultAsync(
+        var file = await _context.SubmissionFiles.FirstOrDefaultAsync(
                     x => x.Id == id,
                     cancellationToken);
-
         if (file == null)
         {
-            throw new FileNotFoundException(
-                "File metadata not found.");
+            throw new FileNotFoundException("File metadata not found.");
         }
 
-        bool exists =
-            await _fileStorage.ExistsAsync(
+        bool exists = await _fileStorage.ExistsAsync(
                 file.StorageName,
                 cancellationToken);
 
         if (!exists)
         {
-            throw new FileNotFoundException(
-                "Physical file not found.");
+            throw new FileNotFoundException("Physical file not found.");
         }
 
-        var stream =
-            await _fileStorage.OpenReadAsync(
+        var stream = await _fileStorage.OpenReadAsync(
                 file.StorageName,
                 cancellationToken);
 
@@ -199,29 +184,21 @@ public class SubmissionFileServices : ISubmissionFileService
         int id,
         CancellationToken cancellationToken = default)
     {
-        var file =
-            await _context.SubmissionFiles
-                .FirstOrDefaultAsync(
+        var file = await _context.SubmissionFiles.FirstOrDefaultAsync(
                     x => x.Id == id,
                     cancellationToken);
-
         if (file == null)
         {
-            throw new FileNotFoundException(
-                "File not found.");
+            throw new FileNotFoundException("File not found.");
         }
 
-        await _fileStorage.DeleteAsync(
-            file.StorageName,
-            cancellationToken);
+        await _fileStorage.DeleteAsync(file.StorageName, cancellationToken);
 
         _context.SubmissionFiles.Remove(file);
 
-        await _context.SaveChangesAsync(
-            cancellationToken);
+        await _context.SaveChangesAsync(cancellationToken);
 
-        _logger.LogInformation(
-            "Submission file deleted successfully. FileId: {FileId}",
+        _logger.LogInformation("Submission file deleted successfully. FileId: {FileId}",
             file.Id);
     }
 

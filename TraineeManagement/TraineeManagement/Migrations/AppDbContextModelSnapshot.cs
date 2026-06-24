@@ -105,6 +105,61 @@ namespace TraineeManagement.Migrations
                     b.ToTable("Mentors");
                 });
 
+            modelBuilder.Entity("TraineeManagement.Models.ProcessingJob", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("Attempts")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("CompletedAt")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<string>("CorrelationId")
+                        .IsRequired()
+                        .HasColumnType("varchar(255)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<string>("ErrorSummary")
+                        .HasColumnType("longtext");
+
+                    b.Property<Guid>("MessageId")
+                        .HasColumnType("char(36)");
+
+                    b.Property<DateTime?>("StartedAt")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("int");
+
+                    b.Property<int>("SubmissionFileId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("SubmissionId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CorrelationId");
+
+                    b.HasIndex("MessageId")
+                        .IsUnique();
+
+                    b.HasIndex("Status");
+
+                    b.HasIndex("SubmissionFileId");
+
+                    b.HasIndex("SubmissionId");
+
+                    b.ToTable("ProcessingJobs");
+                });
+
             modelBuilder.Entity("TraineeManagement.Models.Review", b =>
                 {
                     b.Property<int>("Id")
@@ -181,7 +236,7 @@ namespace TraineeManagement.Migrations
                     b.Property<DateTime>("UpdatedAt")
                         .HasColumnType("datetime(6)");
 
-                    b.Property<int>("UploadedByUserId")
+                    b.Property<int?>("UploadedByUserId")
                         .HasColumnType("int");
 
                     b.HasKey("Id");
@@ -346,13 +401,32 @@ namespace TraineeManagement.Migrations
                         new
                         {
                             Id = 1,
-                            CreatedAt = new DateTime(2026, 6, 19, 7, 16, 45, 408, DateTimeKind.Utc).AddTicks(5507),
+                            CreatedAt = new DateTime(2026, 6, 24, 6, 50, 15, 804, DateTimeKind.Utc).AddTicks(388),
                             Email = "admin@zeuslearning.com",
-                            Password = "$2a$11$rP6kpqxCXRiQG3Oh1A5i3u9aMLORbuf4lUR/G13BTqAGQ6AnM1hQG",
+                            Password = "$2a$11$PDIWzZcBzMOlfwjYYm9Du.a6M0vA2.0njat75uBT5rgAscXxIvXJq",
                             Role = 0,
                             UpdatedAt = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
                             UserName = "Admin_Zeus_Learning"
                         });
+                });
+
+            modelBuilder.Entity("TraineeManagement.Models.ProcessingJob", b =>
+                {
+                    b.HasOne("TraineeManagement.Models.SubmissionFile", "SubmissionFile")
+                        .WithMany()
+                        .HasForeignKey("SubmissionFileId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("TraineeManagement.Models.TaskSubmission", "Submission")
+                        .WithMany()
+                        .HasForeignKey("SubmissionId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Submission");
+
+                    b.Navigation("SubmissionFile");
                 });
 
             modelBuilder.Entity("TraineeManagement.Models.Review", b =>

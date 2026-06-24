@@ -75,6 +75,7 @@ builder.Services.AddScoped<IFileStorageService, LocalFileStorageServices>();
 builder.Services.AddScoped<ISubmissionFileService, SubmissionFileServices>();
 builder.Services.AddScoped<ICacheService, RedisCacheServices>();
 builder.Services.AddScoped<IMessagePublisher, RabbitMqPublisher>();
+builder.Services.AddScoped<IProcessingJobService, ProcessingJobServices>();
 
 builder.Services.AddHttpContextAccessor();
 
