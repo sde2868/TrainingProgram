@@ -26,5 +26,12 @@ builder.Services.AddScoped<ISubmissionProcessingService, SubmissionProcessingSer
 
 builder.Services.AddHostedService<Worker>();
 
+builder.Services.AddHttpClient<ITrainingDirectoryClient, TrainingDirectoryClient>(
+    client =>
+    {
+        client.BaseAddress = new Uri(builder.Configuration["TrainingDirectory:BaseUrl"]!);
+        client.Timeout = TimeSpan.FromSeconds(2);
+    }).AddStandardResilienceHandler();
+    
 var host = builder.Build();
 host.Run();
