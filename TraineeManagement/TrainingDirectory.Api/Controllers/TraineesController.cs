@@ -10,16 +10,20 @@ namespace TrainingDirectory.Api.Controllers
     public class TraineesController : ControllerBase
     {
         private readonly AppDbContext _context;
+        private readonly ILogger<TraineesController> _logger;
 
-        public TraineesController(AppDbContext context)
+        public TraineesController(AppDbContext context, ILogger<TraineesController> logger)
         {
             _context = context;
+            _logger = logger;
         }
 
         [HttpGet("{id}/processing-profile")]
         public async Task<ActionResult<TraineeProcessingProfileResponse>>
             GetProcessingProfile(int id)
         {
+            _logger.LogInformation("Processing profile requested for trainee {TraineeId}", id);
+
             var trainee = await _context.Trainees.FirstOrDefaultAsync(t => t.id == id);
             if (trainee is null)
             {

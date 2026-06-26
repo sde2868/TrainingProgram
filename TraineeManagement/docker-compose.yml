@@ -1,0 +1,93 @@
+services:
+  trainee-management-api:
+    build:
+      context: .
+      dockerfile: TraineeManagement/Dockerfile
+      container_name: traineeManagement
+      ports:
+        - 8080:8080
+      depends_on:
+        - mysql
+        - redis
+        - rabbitmq
+      environment:
+        ConnectionStrings_DefaultConnection: "server=mysql;port=3306;database=trainee_management_db;user=root;password=Root@123"
+        Redis__ConnectionString: "redis:6379"
+        RabbitMQ__HostName: "rabbitmq"
+    networks:
+    - trainee_management_network
+
+  submission-processor:
+    build:
+      context: .
+      dockerfile: SubmissionProcessor/Dockerfile
+    container_name: submissionprocessor
+    depends_on:
+      - mysql
+      - rabbitmq
+      - redis
+      - traineemanagement
+    environment:
+      ConnectionStrings__DefaultConnection: "server=mysql;port=3306;database=trainee_management_db;user=root;password=Root@123"
+      Redis__ConnectionString: "redis:6379"
+      RabbitMQ__HostName: "rabbitmq"
+      TrainingDirectory__BaseUrl: "http://trainingdirectory:8080"
+    networks:
+      - trainee_management_network
+  
+  trainingdirectory:
+    build:
+      context: .
+      dockerfile: TrainingDirectory.Api/Dockerfile
+    container_name: trainingdirectory
+    ports:
+      - "8081:8080"
+    depends_on:
+      - mysql
+    environment:
+      ConnectionStrings__DefaultConnection: "server=mysql;port=3306;database=trainee_management_db;user=root;password=Root@123"
+    networks:
+      - trainee_management_network
+    
+  redis:
+    image: docker-registry-002.zeuslearning.com/zeuslearning/redis:7.4.5
+    container_name: redis
+    ports:
+      - "6379:6379"
+    networks:
+      - trainee_management_network
+
+  mysql:
+    image: docker-registry-002.zeuslearning.com/zeuslearning/mysql:8.0.15
+    container_name: mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: Root@123
+      MYSQL_DATABASE: trainee_management_db
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    networks:
+      - trainee_management_network
+
+  rabbitmq:
+    image: docker-registry-002.zeuslearning.com/zeuslearning/rabbitmq:3-management
+    container_name: rabbitmq
+    hostname: rabbitmq
+    environment:
+      RABBITMQ_DEFAULT_USER: admin
+      RABBITMQ_DEFAULT_PASS: admin123
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    networks:
+      - trainee_management_network
+
+volumes:
+  mysql_data:
+  rabbitmq_data:
+
+networks:
+  trainee_management_network:

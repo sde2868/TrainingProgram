@@ -5,6 +5,7 @@ using TraineeManagement.Exceptions;
 using TraineeManagement.Models;
 using System.Security.Claims;
 using TraineeManagement.Interfaces;
+using TraineeManagement.Services;
 
 namespace TraineeManagement.Services;
 
@@ -16,13 +17,15 @@ public class SubmissionFileServices : ISubmissionFileService
     private readonly FileUploadSettings _fileUploadSettings;
     private readonly IHttpContextAccessor _httpContextAccessor;
     private readonly IMessagePublisher _messagePublisher;
+    private readonly ICorrelationIdAccessor _correlationIdAccessor;
     public SubmissionFileServices(
         AppDbContext context,
         IFileStorageService fileStorage,
         ILogger<SubmissionFileServices> logger,
         IOptions<FileUploadSettings> fileUploadOptions,
         IHttpContextAccessor httpContextAccessor,
-        IMessagePublisher messagePublisher)
+        IMessagePublisher messagePublisher,
+        ICorrelationIdAccessor correlationIdAccessor)
     {
         _context = context;
         _fileStorage = fileStorage;
@@ -30,6 +33,7 @@ public class SubmissionFileServices : ISubmissionFileService
         _fileUploadSettings = fileUploadOptions.Value;
         _httpContextAccessor = httpContextAccessor;
         _messagePublisher = messagePublisher;
+        _correlationIdAccessor = correlationIdAccessor;
     }
 
     private int GetCurrentUserId()
@@ -113,7 +117,7 @@ public class SubmissionFileServices : ISubmissionFileService
         var message = new SubmissionProcessingRequested
         {
             MessageId = Guid.NewGuid(),
-            CorrelationId = Guid.NewGuid().ToString(),
+            CorrelationId = _correlationIdAccessor.GetCorrelationId(),
             TaskSubmissionId = submissionId,
             SubmissionFileId = submissionFile.Id,
             RequestedAt = DateTime.UtcNow

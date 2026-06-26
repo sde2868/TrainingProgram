@@ -15,6 +15,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using Microsoft.OpenApi.Models;
+using StackExchange.Redis;
 
 // dotnet add package Swashbuckle.AspNetCore
 var builder = WebApplication.CreateBuilder(args);
@@ -76,8 +77,16 @@ builder.Services.AddScoped<ISubmissionFileService, SubmissionFileServices>();
 builder.Services.AddScoped<ICacheService, RedisCacheServices>();
 builder.Services.AddScoped<IMessagePublisher, RabbitMqPublisher>();
 builder.Services.AddScoped<IProcessingJobService, ProcessingJobServices>();
+builder.Services.AddScoped<ICorrelationIdAccessor, CorrelationIdAccessor>();
+
+builder.Services.AddSingleton<IConnectionMultiplexer>(_ => ConnectionMultiplexer.Connect(builder.Configuration["Redis:ConnectionString"]));
 
 builder.Services.AddHttpContextAccessor();
+
+builder.Logging.AddSimpleConsole(options =>
+{
+    options.IncludeScopes = true;
+});
 
 builder.Services.AddControllers()
     .AddJsonOptions(options =>
@@ -89,7 +98,8 @@ builder.Services.AddControllers()
 builder.Services.AddHealthChecks()
     .AddCheck<TraineeManagement.Services.HealthChecks.DatabaseHealthCheck>("database", tags: new[] { "ready" })
     .AddCheck<TraineeManagement.Services.HealthChecks.RedisHealthCheck>("redis", tags: new[] { "ready" })
-    .AddCheck<TraineeManagement.Services.HealthChecks.ExternalServiceHealthCheck>("external-api", tags: new[] { "ready" });
+    .AddCheck<TraineeManagement.Services.HealthChecks.ExternalServiceHealthCheck>("external-api", tags: new[] { "ready" })
+    .AddCheck<TraineeManagement.Services.HealthChecks.RabbitMqHealthCheck>("rabbitmq", tags: new[] { "ready" });
 
 // Typed HTTP client for external health checks with a short default timeout
 builder.Services.AddHttpClient<TraineeManagement.Services.HealthChecks.ExternalServiceHealthCheck>()
@@ -171,6 +181,9 @@ app.UseMiddleware<ExceptionMiddleware>();
 app.UseCors("AllowFrontend");
 
 app.UseHttpsRedirection();
+
+app.UseCorrelationId();
+app.UseCorrelationLoggingScope();
 
 app.UseAuthentication();
 app.UseAuthorization();

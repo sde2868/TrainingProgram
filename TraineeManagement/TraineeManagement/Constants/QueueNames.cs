@@ -1,3 +1,4 @@
+namespace TraineeManagement.Constants;
 public static class QueueNames
 {
     public const string SubmissionProcessing =

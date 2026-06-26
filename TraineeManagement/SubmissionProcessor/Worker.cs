@@ -96,16 +96,23 @@ public class Worker : BackgroundService
 
         consumer.ReceivedAsync += async (sender, ea) =>
         {
+            SubmissionProcessingRequested? message = null;
             try
             {
                 var body = ea.Body.ToArray();
                 var json = Encoding.UTF8.GetString(body);
 
-                var message = JsonSerializer.Deserialize<SubmissionProcessingRequested>(json);
+                message = JsonSerializer.Deserialize<SubmissionProcessingRequested>(json);
                 if (message == null)
                 {
                     throw new InvalidOperationException("Unable to deserialize message.");
                 }
+
+                using var logScope = _logger.BeginScope("CorrelationId:{CorrelationId}, MessageId:{MessageId}, SubmissionId:{SubmissionId}, SubmissionFileId:{SubmissionFileId}",
+                                        message.CorrelationId,
+                                        message.MessageId,
+                                        message.TaskSubmissionId,
+                                        message.SubmissionFileId);
 
                 _logger.LogInformation("Received message {MessageId} for SubmissionId {SubmissionId} and FileId {FileId}",
                     message.MessageId,
@@ -127,7 +134,7 @@ public class Worker : BackgroundService
             }
             catch (RetryableProcessingException ex)
             {
-                _logger.LogWarning(ex, "Retryable failure occurred");
+                _logger.LogWarning(ex, "Retryable failure occurred for message {MessageId}", message?.MessageId);
 
                 await _channel.BasicNackAsync(
                     deliveryTag: ea.DeliveryTag,
@@ -137,7 +144,7 @@ public class Worker : BackgroundService
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Processing failed");
+                _logger.LogError(ex, "Processing failed for message {MessageId}", message?.MessageId);
                 if (_channel != null)
                 {
                     await _channel.BasicNackAsync(

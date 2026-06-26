@@ -1,4 +1,5 @@
 namespace TraineeManagement.Models;
+
 public class SubmissionProcessingRequested
 {
     public Guid MessageId { get; set; }

@@ -32,6 +32,11 @@ builder.Services.AddHttpClient<ITrainingDirectoryClient, TrainingDirectoryClient
         client.BaseAddress = new Uri(builder.Configuration["TrainingDirectory:BaseUrl"]!);
         client.Timeout = TimeSpan.FromSeconds(2);
     }).AddStandardResilienceHandler();
+
+builder.Logging.AddSimpleConsole(options =>
+{
+    options.IncludeScopes = true;
+});
     
 var host = builder.Build();
 host.Run();

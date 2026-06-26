@@ -7,10 +7,12 @@ namespace TraineeManagement.Services.HealthChecks
     public class RedisHealthCheck : IHealthCheck
     {
         private readonly IConfiguration _config;
+        private readonly IConnectionMultiplexer _connectionMultiplexer;
 
-        public RedisHealthCheck(IConfiguration config)
+        public RedisHealthCheck(IConfiguration config, IConnectionMultiplexer connectionMultiplexer)
         {
             _config = config;
+            _connectionMultiplexer = connectionMultiplexer;
         }
 
         public async Task<HealthCheckResult> CheckHealthAsync(HealthCheckContext context, CancellationToken cancellationToken = default)
@@ -21,8 +23,7 @@ namespace TraineeManagement.Services.HealthChecks
 
             try
             {
-                var mux = await ConnectionMultiplexer.ConnectAsync(cs);
-                var db = mux.GetDatabase();
+                var db = _connectionMultiplexer.GetDatabase();
                 var pong = await db.PingAsync();
                 return HealthCheckResult.Healthy($"Pong: {pong.TotalMilliseconds}ms");
             }
