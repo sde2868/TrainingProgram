@@ -7,7 +7,7 @@ using SubmissionProcessor.Configuration;
 using Microsoft.Extensions.Options;
 using SubmissionProcessor.Exceptions;
 using SubmissionProcessor.Services;
-using SubmissionProcessor.Models;
+using Shared.DTOs;
 
 namespace SubmissionProcessor.Services;
 

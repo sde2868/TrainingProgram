@@ -1,3 +1,5 @@
+using Microsoft.AspNetCore.Builder;
+
 namespace TraineeManagement.Middlewares;
 
 public static class CorrelationIdMiddlewareExtensions

@@ -1,4 +1,4 @@
-using SubmissionProcessor.Models;
+using Shared.DTOs;
 
 namespace SubmissionProcessor.Services;
 public interface ITrainingDirectoryClient

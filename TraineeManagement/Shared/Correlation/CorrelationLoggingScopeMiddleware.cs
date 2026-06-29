@@ -1,4 +1,6 @@
 using TraineeManagement.Constants;
+using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Logging;
 
 namespace TraineeManagement.Middlewares;
 public class CorrelationLoggingScopeMiddleware

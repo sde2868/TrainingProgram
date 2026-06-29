@@ -5,6 +5,7 @@ using TraineeManagement.Models;
 using TraineeManagement.Interfaces;
 using Microsoft.Extensions.Options;
 using TraineeManagement.Services;
+using TraineeManagement.Constants;
 
 public class RabbitMqPublisher : IMessagePublisher
 {

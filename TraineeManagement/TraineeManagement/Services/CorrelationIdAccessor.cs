@@ -1,6 +1,5 @@
 using Microsoft.AspNetCore.Http;
 using TraineeManagement.Constants;
-
 public class CorrelationIdAccessor : ICorrelationIdAccessor
 {
     private readonly IHttpContextAccessor _httpContextAccessor;

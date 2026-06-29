@@ -1,7 +1,7 @@
 using System.Net.Http.Json;
 using Microsoft.AspNetCore.Mvc;
-using SubmissionProcessor.Models;
 using SubmissionProcessor.Services;
+using Shared.DTOs;
 
 namespace SubmissionProcessor.Services;
 public class TrainingDirectoryClient : ITrainingDirectoryClient

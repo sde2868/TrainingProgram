@@ -39,7 +39,20 @@ public class Worker : BackgroundService
             VirtualHost = _config["RabbitMQ:VirtualHost"] ?? "/"
         };
 
-        _connection = await factory.CreateConnectionAsync(stoppingToken);
+        IConnection connection = null;
+        while (!stoppingToken.IsCancellationRequested)
+        {
+            try
+            {
+                connection = await factory.CreateConnectionAsync();
+                break;
+            }
+            catch
+            {
+                _logger.LogWarning("RabbitMQ unavailable. Retrying in 5 seconds...");
+                await Task.Delay(TimeSpan.FromSeconds(5), stoppingToken);
+            }
+        }
         _channel = await _connection.CreateChannelAsync(cancellationToken: stoppingToken);
 
         // var queue = _config["RabbitMQ:QueueName"];
@@ -70,7 +83,7 @@ public class Worker : BackgroundService
         //     exchange: deadLetterExchange!,
         //     routingKey: queue!,
         //     cancellationToken: stoppingToken);
-        
+
         // var queueArgs = new Dictionary<string, object?>
         // {
         //     ["x-dead-letter-exchange"] = deadLetterExchange,

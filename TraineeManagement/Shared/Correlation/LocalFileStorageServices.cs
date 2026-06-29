@@ -1,6 +1,7 @@
 using Microsoft.Extensions.Options;
 using TraineeManagement.Models;
 using TraineeManagement.Interfaces;
+using Microsoft.Extensions.Logging;
 
 namespace TraineeManagement.Services;
 

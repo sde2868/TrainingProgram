@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using TrainingDirectory.Api.DTOs;
+using Shared.DTOs;
 using TraineeManagement.Data;
 
 namespace TrainingDirectory.Api.Controllers

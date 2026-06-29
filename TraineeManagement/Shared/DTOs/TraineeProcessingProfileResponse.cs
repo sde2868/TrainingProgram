@@ -1,4 +1,4 @@
-namespace TrainingDirectory.Api.DTOs;
+namespace Shared.DTOs;
 public class TraineeProcessingProfileResponse
 {
     public int TraineeId { get; set; }
