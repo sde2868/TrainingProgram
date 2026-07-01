@@ -18,7 +18,9 @@ namespace TraineeManagement.Services
             }
             catch (Exception ex)
             {
-                throw new Exception($"Error while seeding user data.", ex);
+                _logger.LogError("Error while seeding user data.");
+                // throw new Exception($"Error while seeding user data.", ex);
+                throw;
             }
         }
 
@@ -51,7 +53,8 @@ namespace TraineeManagement.Services
                     "Login: Failed login attempt. UserName: {UserName}",
                     username
                 );
-                throw new Exception("Error during login.", ex);
+                // throw new Exception("Error during login.", ex);
+                throw;
             }
         }
 
@@ -107,7 +110,8 @@ namespace TraineeManagement.Services
             catch (Exception ex)
             {
                 _logger.LogError($"GetAllUsers: error fetching users with search {search}.");
-                throw new Exception($"Error while fetcing users.", ex);
+                // throw new Exception($"Error while fetcing users.", ex);
+                throw;
             }
         }
 
@@ -127,7 +131,8 @@ namespace TraineeManagement.Services
             catch (Exception ex)
             {
                 _logger.LogError($"GetUserById: error fetching user with id {id}.");
-                throw new Exception($"Error while fetching user wih id {id}.", ex);
+                // throw new Exception($"Error while fetching user wih id {id}.", ex);
+                throw;
             }
         }
 
@@ -154,7 +159,8 @@ namespace TraineeManagement.Services
             catch (Exception ex)
             {
                 _logger.LogError($"CreateUser: error creating new user.");
-                throw new Exception($"Error while creating user.", ex);
+                // throw new Exception($"Error while creating user.", ex);
+                throw;
             }
         }
 
@@ -183,7 +189,8 @@ namespace TraineeManagement.Services
             catch (Exception ex)
             {
                 _logger.LogError($"UpdateUser: error updating user with id {id}.");
-                throw new Exception($"Error updsting user with id {id}.", ex);
+                // throw new Exception($"Error updating user with id {id}.", ex);
+                throw;
             }
         }
 
@@ -206,7 +213,8 @@ namespace TraineeManagement.Services
             catch (Exception ex)
             {
                 _logger.LogError($"DeleteUserById: error deleting user with id {id}.");
-                throw new Exception($"Error deleting user with id {id}.", ex);
+                // throw new Exception($"Error deleting user with id {id}.", ex);
+                throw;
             }
         }
 
@@ -226,7 +234,8 @@ namespace TraineeManagement.Services
             catch (Exception ex)
             {
                 _logger.LogError($"ReturnUserDTO: error converting user with id {user.Id} to DTO.");
-                throw new Exception("Error while converting user to DTO.", ex);
+                // throw new Exception("Error while converting user to DTO.", ex);
+                throw;
             }
         }
     }

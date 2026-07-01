@@ -37,7 +37,8 @@ namespace TraineeManagement.Services
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error while seeding review data.");
-                throw new Exception($"Error while seeding review data.", ex);
+                // throw new Exception($"Error while seeding review data.", ex);
+                throw;
             }
         }
 
@@ -95,7 +96,8 @@ namespace TraineeManagement.Services
             catch (Exception ex)
             {
                 _logger.LogError(ex, "GetAllReviews: error fetching reviews.");
-                throw new Exception($"Error while deleting reviews.", ex);
+                // throw new Exception($"Error while deleting reviews.", ex);
+                throw;
             }
         }
 
@@ -114,7 +116,8 @@ namespace TraineeManagement.Services
             catch (Exception ex)
             {
                 _logger.LogError(ex, $"GetReviewById: error while fetching review with id {id}.");
-                throw new Exception($"Error while feetching review with id {id}.", ex);
+                // throw new Exception($"Error while feetching review with id {id}.", ex);
+                throw;
             }
 
         }
@@ -126,14 +129,14 @@ namespace TraineeManagement.Services
                 _logger.LogInformation($"CreateReview: creating review.");
                 // Validate FK
                 if (!await _context.TaskSubmissions.AnyAsync(x => x.Id == dto.TaskSubmissionId))
-                    throw new Exception("TaskSubmission does not exist");
+                    throw new KeyNotFoundException("TaskSubmission does not exist");
 
                 if (!await _context.Mentors.AnyAsync(x => x.Id == dto.MentorId))
-                    throw new Exception("Mentor does not exist");    
+                    throw new KeyNotFoundException("Mentor does not exist");    
 
                 // Validate dates
                 if (dto.ReviewedDate > DateTime.UtcNow)
-                    throw new Exception("ReviewedDate cannot be in future");
+                    throw new KeyNotFoundException("ReviewedDate cannot be in future");
 
                 Review review = new Review
                 {
@@ -156,7 +159,8 @@ namespace TraineeManagement.Services
             catch (Exception ex)
             {
                 _logger.LogError(ex, "CreateReview: error while creating review.");
-                throw new Exception($"Error while creating review.", ex);
+                // throw new Exception($"Error while creating review.", ex);
+                throw;
             }
 
         }
@@ -181,7 +185,8 @@ namespace TraineeManagement.Services
             catch (Exception ex)
             {
                 _logger.LogError($"ReturnReviewDTO: error converting review with id {r.Id} to DTO.");
-                throw new Exception("Error while converting review to DTO.", ex);
+                // throw new Exception("Error while converting review to DTO.", ex);
+                throw;
             }
 
         }

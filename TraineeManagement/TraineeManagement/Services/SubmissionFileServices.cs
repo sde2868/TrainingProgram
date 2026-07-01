@@ -6,6 +6,7 @@ using TraineeManagement.Models;
 using System.Security.Claims;
 using TraineeManagement.Interfaces;
 using TraineeManagement.Services;
+using System.Linq.Expressions;
 
 namespace TraineeManagement.Services;
 
@@ -84,65 +85,93 @@ public class SubmissionFileServices : ISubmissionFileService
             throw new ArgumentException($"Files with extension '{extension}' are not allowed.");
         }
         await using var stream = file.OpenReadStream();
-        
+
         string storageName = await _fileStorage.SaveAsync(
                 stream,
                 extension,
                 cancellationToken);
 
-        var submissionFile = new SubmissionFile
+        await using var tx = await _context.Database.BeginTransactionAsync(
+                cancellationToken);
+
+        try
         {
-            SubmissionId = submissionId,
-            OriginalFileName = file.FileName,
-            StorageName = storageName,
-            ContentType = file.ContentType,
-            Size = file.Length,
-            Checksum = string.Empty, // TODO: SHA256
-            UploadedByUserId = GetCurrentUserId(),
-            CreatedAt = DateTime.UtcNow,
-            UpdatedAt = DateTime.UtcNow
-        };
+            var submissionFile = new SubmissionFile
+            {
+                SubmissionId = submissionId,
+                OriginalFileName = file.FileName,
+                StorageName = storageName,
+                ContentType = file.ContentType,
+                Size = file.Length,
+                Checksum = string.Empty, // TODO: SHA256
+                UploadedByUserId = GetCurrentUserId(),
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow
+            };
 
-        await _context.SubmissionFiles.AddAsync(
-            submissionFile,
-            cancellationToken);
+            await _context.SubmissionFiles.AddAsync(
+                submissionFile,
+                cancellationToken);
 
-        await _context.SaveChangesAsync(
-            cancellationToken);
+            await _context.SaveChangesAsync(
+                cancellationToken);
 
-        _logger.LogInformation("Submission file uploaded successfully. FileId: {FileId}, SubmissionId: {SubmissionId}",
-            submissionFile.Id,
-            submissionId);
+            _logger.LogInformation("Submission file uploaded successfully. FileId: {FileId}, SubmissionId: {SubmissionId}",
+                submissionFile.Id,
+                submissionId);
 
-        var message = new SubmissionProcessingRequested
+            var message = new SubmissionProcessingRequested
+            {
+                MessageId = Guid.NewGuid(),
+                CorrelationId = _correlationIdAccessor.GetCorrelationId(),
+                TaskSubmissionId = submissionId,
+                SubmissionFileId = submissionFile.Id,
+                RequestedAt = DateTime.UtcNow
+            };
+
+            var processingJob = new ProcessingJob
+            {
+                MessageId = message.MessageId,
+                CorrelationId = message.CorrelationId,
+                SubmissionId = submission.Id,
+                SubmissionFileId = submissionFile.Id,
+                Status = ProcessingJobStatus.Queued,
+                Attempts = 0,
+                CreatedAt = DateTime.UtcNow
+            };
+
+            _context.ProcessingJobs.Add(processingJob);
+
+            await _context.SaveChangesAsync(cancellationToken);
+
+            await _messagePublisher.PublishSubmissionProcessingAsync(message, cancellationToken);
+
+            await tx.CommitAsync(cancellationToken);
+
+            _logger.LogInformation($"UploadAsync: successfully published message {message.MessageId} for task submission {message.TaskSubmissionId}.");
+
+            return ReturnDTO(submissionFile);
+        }
+        catch (Exception ex)
         {
-            MessageId = Guid.NewGuid(),
-            CorrelationId = _correlationIdAccessor.GetCorrelationId(),
-            TaskSubmissionId = submissionId,
-            SubmissionFileId = submissionFile.Id,
-            RequestedAt = DateTime.UtcNow
-        };
-
-        var processingJob = new ProcessingJob
-        {
-            MessageId = message.MessageId,
-            CorrelationId = message.CorrelationId,
-            SubmissionId = submission.Id,
-            SubmissionFileId = submissionFile.Id,
-            Status = ProcessingJobStatus.Queued,
-            Attempts = 0,
-            CreatedAt = DateTime.UtcNow
-        };
-
-        _context.ProcessingJobs.Add(processingJob);
-
-        await _context.SaveChangesAsync(cancellationToken);
-
-        await _messagePublisher.PublishSubmissionProcessingAsync(message);
-
-        _logger.LogInformation($"UploadAsync: successfully published message {message.MessageId} for task submission {message.TaskSubmissionId}.");
-        
-        return ReturnDTO(submissionFile);
+            _logger.LogError(ex, "Upload failed. Rolling back transaction for submission {SubmissionId}",
+                            submissionId);
+            await tx.RollbackAsync(cancellationToken);
+            try
+            {
+                await _fileStorage.DeleteAsync(
+                    storageName,
+                    cancellationToken);
+            }
+            catch (Exception cleanupEx)
+            {
+                _logger.LogError(
+                    cleanupEx,
+                    "Failed to cleanup file {StorageName}",
+                    storageName);
+            }
+            throw;
+        }
     }
 
     public async Task<SubmissionFileDTO?> GetByIdAsync(

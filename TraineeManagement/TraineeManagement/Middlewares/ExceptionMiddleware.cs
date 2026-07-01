@@ -1,6 +1,8 @@
 using System.Net;
 using System.Text.Json;
 using TraineeManagement.Exceptions;
+using MySqlConnector;
+using Microsoft.EntityFrameworkCore;
 
 namespace TraineeManagement.Middlewares
 {
@@ -48,7 +50,7 @@ namespace TraineeManagement.Middlewares
                     statusCode = (int)statusCode,
                     message = GetMessage(ex),
                     // Show detailed error only in development
-                    details = _env.IsDevelopment() ? ex.Message : null
+                    details = _env.IsDevelopment() ? ex.ToString() : null
                 };
 
                 var json = JsonSerializer.Serialize(response);
@@ -65,7 +67,11 @@ namespace TraineeManagement.Middlewares
                 KeyNotFoundException => HttpStatusCode.NotFound,
                 FileNotFoundException => HttpStatusCode.NotFound,
                 FileTooLargeException => HttpStatusCode.RequestEntityTooLarge, // 413
-                InvalidOperationException =>  HttpStatusCode.BadRequest,
+                // InvalidOperationException => HttpStatusCode.BadRequest,
+                MessageQueueUnavailableException => HttpStatusCode.ServiceUnavailable,
+                MySqlException => HttpStatusCode.ServiceUnavailable,
+                DbUpdateException => HttpStatusCode.ServiceUnavailable,
+                InvalidOperationException when ex.Message.Contains("transient failure") => HttpStatusCode.ServiceUnavailable,
                 _ => HttpStatusCode.InternalServerError
             };
         }
@@ -76,11 +82,15 @@ namespace TraineeManagement.Middlewares
             return ex switch
             {
                 ArgumentException => ex.Message,
-                InvalidOperationException => ex.Message,
+                // InvalidOperationException => ex.Message,
                 UnauthorizedAccessException => "Unauthorized access.",
                 KeyNotFoundException => ex.Message,
                 FileNotFoundException => ex.Message,
                 FileTooLargeException => ex.Message,
+                MessageQueueUnavailableException => ex.Message,
+                MySqlException => "Database service is unavailable.",
+                DbUpdateException => "Database service is unavailable.",
+                InvalidOperationException when ex.Message.Contains("transient failure") => "Database service is unavailable.",
                 _ => "An unexpected error occurred. Please try again later."
             };
         }

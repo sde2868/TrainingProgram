@@ -79,7 +79,16 @@ builder.Services.AddScoped<IMessagePublisher, RabbitMqPublisher>();
 builder.Services.AddScoped<IProcessingJobService, ProcessingJobServices>();
 builder.Services.AddScoped<ICorrelationIdAccessor, CorrelationIdAccessor>();
 
-builder.Services.AddSingleton<IConnectionMultiplexer>(_ => ConnectionMultiplexer.Connect(builder.Configuration["Redis:ConnectionString"]));
+builder.Services.AddSingleton<IConnectionMultiplexer>(sp =>
+{
+    var connectionString = sp.GetRequiredService<IConfiguration>() ["Redis:ConnectionString"];
+    var options = ConfigurationOptions.Parse(connectionString);
+    options.AbortOnConnectFail = false;
+    options.ConnectRetry = 1;
+    options.ConnectTimeout = 1000;
+    options.SyncTimeout = 1000;
+    return ConnectionMultiplexer.Connect(options);
+});
 
 builder.Services.AddHttpContextAccessor();
 
@@ -120,7 +129,7 @@ builder.Services.AddStackExchangeRedisCache(options =>
 });
 
 builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString)));
+    options.UseMySql(connectionString, ServerVersion.Parse("8.0.15")));
 // builder.Services.AddDbContext<AppDbContext>(opt =>
 //     opt.UseInMemoryDatabase("TraineeDb"));
 

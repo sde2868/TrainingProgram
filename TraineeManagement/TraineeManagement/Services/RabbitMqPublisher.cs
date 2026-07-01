@@ -6,6 +6,8 @@ using TraineeManagement.Interfaces;
 using Microsoft.Extensions.Options;
 using TraineeManagement.Services;
 using TraineeManagement.Constants;
+using TraineeManagement.Exceptions;
+using RabbitMQ.Client.Exceptions;
 
 public class RabbitMqPublisher : IMessagePublisher
 {
@@ -25,61 +27,69 @@ public class RabbitMqPublisher : IMessagePublisher
         CancellationToken cancellationToken = default)
     {
         _logger.LogInformation($"PublishSubmissionProcessingAsync: new request to process submission for task submission ${message.TaskSubmissionId}.");
-        var factory = new ConnectionFactory
+        try
         {
-            HostName = _settings.HostName,
-            Port = _settings.Port,
-            UserName = _settings.UserName,
-            Password = _settings.Password,
-            VirtualHost = _settings.VirtualHost
-        };
+            var factory = new ConnectionFactory
+            {
+                HostName = _settings.HostName,
+                Port = _settings.Port,
+                UserName = _settings.UserName,
+                Password = _settings.Password,
+                VirtualHost = _settings.VirtualHost
+            };
 
-        await using var connection =
-            await factory.CreateConnectionAsync(cancellationToken);
+            await using var connection =
+                await factory.CreateConnectionAsync(cancellationToken);
 
-        await using var channel =
-            await connection.CreateChannelAsync(cancellationToken: cancellationToken);
+            await using var channel =
+                await connection.CreateChannelAsync(cancellationToken: cancellationToken);
 
-        // var queueArgs = new Dictionary<string, object?>
-        // {
-        //     ["x-dead-letter-exchange"] = "submission-processing-dlx",
-        //     ["x-dead-letter-routing-key"] = "submission-processing"
-        // };
+            // var queueArgs = new Dictionary<string, object?>
+            // {
+            //     ["x-dead-letter-exchange"] = "submission-processing-dlx",
+            //     ["x-dead-letter-routing-key"] = "submission-processing"
+            // };
 
-        // await channel.QueueDeclareAsync(
-        //     queue: QueueNames.SubmissionProcessing,
-        //     durable: true,
-        //     exclusive: false,
-        //     autoDelete: false,
-        //     arguments: queueArgs,
-        //     cancellationToken: cancellationToken);
-        await RabbitMqTopologyConfigurator.ConfigureAsync(channel, cancellationToken);
+            // await channel.QueueDeclareAsync(
+            //     queue: QueueNames.SubmissionProcessing,
+            //     durable: true,
+            //     exclusive: false,
+            //     autoDelete: false,
+            //     arguments: queueArgs,
+            //     cancellationToken: cancellationToken);
+            await RabbitMqTopologyConfigurator.ConfigureAsync(channel, cancellationToken);
 
-        var json = JsonSerializer.Serialize(message);
+            var json = JsonSerializer.Serialize(message);
 
-        var body = Encoding.UTF8.GetBytes(json);
+            var body = Encoding.UTF8.GetBytes(json);
 
-        var properties = new BasicProperties
+            var properties = new BasicProperties
+            {
+                Persistent = true,
+                MessageId = message.MessageId.ToString(),
+                CorrelationId = message.CorrelationId,
+                ContentType = "application/json"
+            };
+
+            await channel.BasicPublishAsync(
+                exchange: string.Empty,
+                routingKey: QueueNames.SubmissionProcessing,
+                mandatory: true,
+                basicProperties: properties,
+                body: body,
+                cancellationToken: cancellationToken);
+
+            _logger.LogInformation(
+                "Submission processing message published. MessageId: {MessageId}, CorrelationId: {CorrelationId}, SubmissionId: {SubmissionId}, FileId: {FileId}",
+                message.MessageId,
+                message.CorrelationId,
+                message.TaskSubmissionId,
+                message.SubmissionFileId);
+        }
+        catch (Exception ex) 
         {
-            Persistent = true,
-            MessageId = message.MessageId.ToString(),
-            CorrelationId = message.CorrelationId,
-            ContentType = "application/json"
-        };
-
-        await channel.BasicPublishAsync(
-            exchange: string.Empty,
-            routingKey: QueueNames.SubmissionProcessing,
-            mandatory: true,
-            basicProperties: properties,
-            body: body,
-            cancellationToken: cancellationToken);
-
-        _logger.LogInformation(
-            "Submission processing message published. MessageId: {MessageId}, CorrelationId: {CorrelationId}, SubmissionId: {SubmissionId}, FileId: {FileId}",
-            message.MessageId,
-            message.CorrelationId,
-            message.TaskSubmissionId,
-            message.SubmissionFileId);
+            _logger.LogError(ex, "RabbitMQ unavailable.");
+            throw new MessageQueueUnavailableException("Submission processing service is unavailable.");
+        }
     }
 }

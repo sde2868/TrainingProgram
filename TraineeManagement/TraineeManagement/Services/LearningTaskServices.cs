@@ -37,7 +37,8 @@ namespace TraineeManagement.Services
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error while seeding learning task data.");
-                throw new Exception($"Error while seeding learning task data.", ex);
+                // throw new Exception($"Error while seeding learning task data.", ex);
+                throw;
             }
         }
 
@@ -96,7 +97,8 @@ namespace TraineeManagement.Services
             catch (Exception ex)
             {
                 _logger.LogError(ex, $"GetAllLearningTasks: Error fetching learning tasks for search {search}.");
-                throw new Exception($"Error while deleting learning tasks.", ex);
+                // throw new Exception($"Error while deleting learning tasks.", ex);
+                throw;
             }
         }
 
@@ -115,7 +117,8 @@ namespace TraineeManagement.Services
             catch (Exception ex)
             {
                 _logger.LogError(ex, $"GetLearningTaskById, Error while fetching learning task by id {id}.");
-                throw new Exception($"Error while fetching learning task with id {id}.", ex);
+                // throw new Exception($"Error while fetching learning task with id {id}.", ex);
+                throw;
             }
 
         }
@@ -152,7 +155,8 @@ namespace TraineeManagement.Services
             catch (Exception ex)
             {
                 _logger.LogError(ex, "CreateLeaningTask: Error while creating learning task.");
-                throw new Exception($"Error while creating learning task.", ex);
+                // throw new Exception($"Error while creating learning task.", ex);
+                throw;
             }
 
         }
@@ -192,7 +196,8 @@ namespace TraineeManagement.Services
             catch (Exception ex)
             {
                 _logger.LogError(ex, $"Error while updating learning task with id {id}.");
-                throw new Exception($"Error while updating learning task with id {id}.", ex);
+                // throw new Exception($"Error while updating learning task with id {id}.", ex);
+                throw;
             }
 
         }
@@ -221,7 +226,8 @@ namespace TraineeManagement.Services
             catch (Exception ex)
             {
                 _logger.LogError(ex, $"DeleteLearningTaskById: error while deleting learning task with id {id}.");
-                throw new Exception($"Error while deleting learning task with id {id}.", ex);
+                // throw new Exception($"Error while deleting learning task with id {id}.", ex);
+                throw;
             }
 
         }
@@ -244,7 +250,8 @@ namespace TraineeManagement.Services
             catch (Exception ex)
             {
                 _logger.LogError(ex, $"ReturnLearningTaskDTO: error while converting learning task with id {t.Id} to DTO");
-                throw new Exception("Error while converting learning task to DTO.", ex);
+                // throw new Exception("Error while converting learning task to DTO.", ex);
+                throw;
             }
 
         }

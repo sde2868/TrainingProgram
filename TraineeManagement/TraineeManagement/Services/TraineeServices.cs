@@ -40,7 +40,8 @@ namespace TraineeManagement.Services
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error while seeding trainee data.");
-                throw new Exception($"Error while seeding trainee data.", ex);
+                // throw new Exception($"Error while seeding trainee data.", ex);
+                throw;
             }
         }
 
@@ -100,7 +101,8 @@ namespace TraineeManagement.Services
             catch (Exception ex)
             {
                 _logger.LogError(ex, $"GetAllTrainees: error searching trainees with search {search}.");
-                throw new Exception("Error searching trainees.", ex);
+                // throw new Exception("Error searching trainees.", ex);
+                throw;
             }
         }
 
@@ -132,7 +134,8 @@ namespace TraineeManagement.Services
             catch (Exception ex)
             {
                 _logger.LogError(ex, $"GetTraineeById: error while fetching trainee with id {id}.");
-                throw new Exception($"Error while feetching trainee with id {id}.", ex);
+                // throw new Exception($"Error while feetching trainee with id {id}.", ex);
+                throw;
             }
 
         }
@@ -168,7 +171,8 @@ namespace TraineeManagement.Services
             catch (Exception ex)
             {
                 _logger.LogError(ex, "CreateTrainee: error while creating trainee.");
-                throw new Exception($"Error while creating trainee.", ex);
+                // throw new Exception($"Error while creating trainee.", ex);
+                throw;
             }
 
         }
@@ -208,7 +212,8 @@ namespace TraineeManagement.Services
             catch (Exception ex)
             {
                 _logger.LogError(ex, $"UpdateTrainee: error while updating trainee with id {id}.");
-                throw new Exception($"Error while updating trainee with id {id}.", ex);
+                // throw new Exception($"Error while updating trainee with id {id}.", ex);
+                throw;
             }
 
         }
@@ -240,7 +245,8 @@ namespace TraineeManagement.Services
             catch (Exception ex)
             {
                 _logger.LogError(ex, $"DeleteTraineeById: error while deleting trainee with id {id}.");
-                throw new Exception($"Error while deleting trainee with id {id}.", ex);
+                // throw new Exception($"Error while deleting trainee with id {id}.", ex);
+                throw;
             }
 
         }
@@ -263,7 +269,8 @@ namespace TraineeManagement.Services
             catch (Exception ex)
             {
                 _logger.LogInformation($"ReturnTraineeDTO: converting trainee with id {tr.id} to DTO.");
-                throw new Exception("Error while converting trainee to DTO.", ex);
+                // throw new Exception("Error while converting trainee to DTO.", ex);
+                throw;
             }
 
         }

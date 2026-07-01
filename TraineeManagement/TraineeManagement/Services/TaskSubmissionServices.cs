@@ -40,7 +40,8 @@ namespace TraineeManagement.Services
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error while seeding task submission data.");
-                throw new Exception($"Error while seeding task submission data.", ex);
+                // throw new Exception($"Error while seeding task submission data.", ex);
+                throw;
             }
         }
 
@@ -97,7 +98,8 @@ namespace TraineeManagement.Services
             catch (Exception ex)
             {
                 _logger.LogError(ex, $"GetAllTaskSubmissions: error fetching task submissions with search {search}.");
-                throw new Exception($"Error while deleting task submissions.", ex);
+                // throw new Exception($"Error while deleting task submissions.", ex);
+                throw;
             }
         }
 
@@ -130,7 +132,8 @@ namespace TraineeManagement.Services
             catch (Exception ex)
             {
                 _logger.LogError(ex, $"GetTaskSubmissionById: error while fetching task submission with id {id}.");
-                throw new Exception($"Error while feetching task submission with id {id}.", ex);
+                // throw new Exception($"Error while feetching task submission with id {id}.", ex);
+                throw;
             }
 
         }
@@ -142,11 +145,11 @@ namespace TraineeManagement.Services
                 _logger.LogInformation($"CreateTaskSubmission: creating new task submission.");
                 // Validate FK
                 if (!await _context.TaskAssignments.AnyAsync(x => x.Id == dto.TaskAssignmentId))
-                    throw new Exception("TaskAssginment does not exist");
+                    throw new KeyNotFoundException("TaskAssginment does not exist");
 
                 // Validate dates
                 if (dto.SubmittedDate > DateTime.UtcNow)
-                    throw new Exception("SubmittedDate cannot be in future");
+                    throw new KeyNotFoundException("SubmittedDate cannot be in future");
 
                 TaskSubmission taskSubmission = new TaskSubmission
                 {
@@ -169,7 +172,8 @@ namespace TraineeManagement.Services
             catch (Exception ex)
             {
                 _logger.LogError(ex, "CreateTaskSubmission: error while creating task submission.");
-                throw new Exception($"Error while creating task submission.", ex);
+                // throw new Exception($"Error while creating task submission.", ex);
+                throw;
             }
 
         }
@@ -192,7 +196,8 @@ namespace TraineeManagement.Services
             catch (Exception ex)
             {
                 _logger.LogError($"ReturnTaskSubmissionDTO: error while converting task submission with id {t.Id} to dto.");
-                throw new Exception("Error while converting task submission to DTO.", ex);
+                // throw new Exception("Error while converting task submission to DTO.", ex);
+                throw;
             }
         }
     }

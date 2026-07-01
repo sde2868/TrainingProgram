@@ -40,7 +40,8 @@ namespace TraineeManagement.Services
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error while seeding task assignment data.");
-                throw new Exception($"Error while seeding task assignment data.", ex);
+                // throw new Exception($"Error while seeding task assignment data.", ex);
+                throw;
             }
         }
 
@@ -98,7 +99,8 @@ namespace TraineeManagement.Services
             catch (Exception ex)
             {
                 _logger.LogError(ex, $"GetAllTaskAssignments: error fetching task assignments for search {search}.");
-                throw new Exception($"Error while deleting task assignments.", ex);
+                // throw new Exception($"Error while deleting task assignments.", ex);
+                throw;
             }
         }
 
@@ -131,7 +133,8 @@ namespace TraineeManagement.Services
             catch (Exception ex)
             {
                 _logger.LogError(ex, $"GetTaskAssignemntById: error while fetching task assignment with id {id}.");
-                throw new Exception($"Error while feetching task assignment with id {id}.", ex);
+                // throw new Exception($"Error while feetching task assignment with id {id}.", ex);
+                throw;
             }
 
         }
@@ -143,17 +146,17 @@ namespace TraineeManagement.Services
                 _logger.LogInformation($"Creating new task assignment.");
                 // Validate FK
                 if (!await _context.Trainees.AnyAsync(x => x.id == dto.TraineeId))
-                    throw new Exception("Trainee does not exist");
+                    throw new KeyNotFoundException("Trainee does not exist");
 
                 if (!await _context.Mentors.AnyAsync(x => x.Id == dto.MentorId))
-                    throw new Exception("Mentor does not exist");
+                    throw new KeyNotFoundException("Mentor does not exist");
 
                 if (!await _context.LearningTasks.AnyAsync(x => x.Id == dto.LearningTaskId))
-                    throw new Exception("LearningTask does not exist");
+                    throw new KeyNotFoundException("LearningTask does not exist");
 
                 // Validate dates
                 if (dto.DueDate < dto.AssignedDate)
-                    throw new Exception("DueDate cannot be before AssignedDate");
+                    throw new KeyNotFoundException("DueDate cannot be before AssignedDate");
 
                 TaskAssignment taskAssignment = new TaskAssignment
                 {
@@ -178,7 +181,8 @@ namespace TraineeManagement.Services
             catch (Exception ex)
             {
                 _logger.LogError(ex, "CreateTaskAssignment: error while creating task assignment.");
-                throw new Exception($"Error while creating task assignment.", ex);
+                // throw new Exception($"Error while creating task assignment.", ex);
+                throw;
             }
 
         }
@@ -209,7 +213,8 @@ namespace TraineeManagement.Services
             catch (Exception ex)
             {
                 _logger.LogError(ex, $"UpdateTaskAssignmentStatus: error while updating task assignment with id {id}.");
-                throw new Exception($"Error while updating task assignment with id {id}.", ex);
+                // throw new Exception($"Error while updating task assignment with id {id}.", ex);
+                throw;
             }
         }
 
@@ -233,7 +238,8 @@ namespace TraineeManagement.Services
             catch (Exception ex)
             {
                 _logger.LogError($"ReturnTaskAssignmentDTO: error converting review with id {t.Id} to DTO.");
-                throw new Exception("Error while converting task assignment to DTO.", ex);
+                // throw new Exception("Error while converting task assignment to DTO.", ex);
+                throw;
             }
         }
     }
