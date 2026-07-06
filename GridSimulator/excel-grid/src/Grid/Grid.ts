@@ -286,6 +286,25 @@ export class Grid {
     }
 
     private handleMouseMove(event: MouseEvent): void {
+        if (!this.isResizingColumn && !this.isResizingRow) {
+            const mouseX = event.offsetX + this.scrollX;
+            const mouseY = event.offsetY + this.scrollY;
+            if (
+                event.offsetY < this.rowHeight &&
+                this.getResizeColumn(mouseX) >= 0
+            ) {
+                this.canvas.style.cursor = "col-resize";
+            }
+            else if (
+                event.offsetX < this.rowHeaderWidth &&
+                this.getResizeRow(mouseY) >= 0
+            ) {
+                this.canvas.style.cursor = "row-resize";
+            }
+            else {
+                this.canvas.style.cursor = "cell";
+            }
+        }
         if (this.isResizingColumn) {
             const x = this.getColumnX(this.resizingColumn);
             const newWidth = event.offsetX + this.scrollX - x;
@@ -650,10 +669,10 @@ export class Grid {
         const x = rect.left + this.getColumnX(column) - this.scrollX;
         const y = rect.top + this.getRowY(row) - this.scrollY;
 
-        this.editor!.style.left = `${x} px`;
-        this.editor!.style.top = `${y} px`;
-        this.editor!.style.width = `${this.getColumnWidth(column)} px`;
-        this.editor!.style.height = `${this.getRowHeight(row)} px`;
+        this.editor!.style.left = `${x}px`;
+        this.editor!.style.top = `${y}px`;
+        this.editor!.style.width = `${this.getColumnWidth(column)}px`;
+        this.editor!.style.height = `${this.getRowHeight(row)}px`;
         this.editor!.style.display = "block";
 
         this.editor!.focus();
@@ -683,9 +702,9 @@ export class Grid {
         window.addEventListener("keydown", this.handleKeyDown.bind(this));
 
         this.editor = document.createElement("textarea");
-        this.editor.style.resize = "none";
-        this.editor.style.overflow = "hidden";
-        this.editor.style.position = "absolute";
+        // this.editor.style.resize = "none";
+        // this.editor.style.overflow = "hidden";
+        // this.editor.style.position = "absolute";
         this.editor.style.display = "none";
         document.body.appendChild(this.editor);
 
@@ -703,8 +722,7 @@ export class Grid {
     }
 
     render(): void {
-        this.renderer.clear(this.canvas.width, this.canvas.height);
-
+        
         const columns = this.dataStore.getColumns();
 
         // const visibleRows = Math.ceil(this.canvas.height / this.rowHeight);
@@ -729,6 +747,10 @@ export class Grid {
         const minColumn = Math.min(this.selectionManager.getStartColumn(), this.selectionManager.getEndColumn());
         const maxColumn = Math.max(this.selectionManager.getStartColumn(), this.selectionManager.getEndColumn());
 
+        this.ctx.save();
+        this.ctx.beginPath();
+        this.ctx.rect(this.rowHeaderWidth, 0, this.canvas.width - this.rowHeaderWidth, this.rowHeight);
+        this.ctx.clip();
         for (let col = startColumn; col < endColumn; col++) {
             const x = this.getColumnX(col) - this.scrollX;
             const width = this.getColumnWidth(col);
@@ -738,9 +760,14 @@ export class Grid {
             }
             // this.renderer.drawCell(x, 0, width, this.rowHeight, ((columns[col] !== undefined) ? columns[col] : ""), isSelected);
             const headerText = col < columns.length ? columns[col] : this.getExcelColumnName(col);
-            this.renderer.drawCell(x, 0, width, this.rowHeight, headerText, isSelected);
+            this.renderer.drawHeader(x, 0, width, this.rowHeight, headerText, isSelected);
         }
+        this.ctx.restore();
         // let currentY = this.rowHeight;
+        this.ctx.save();
+        this.ctx.beginPath();
+        this.ctx.rect(0, this.rowHeight, this.rowHeaderWidth, this.canvas.height - this.rowHeight);
+        this.ctx.clip();
         for (let row = startRow; row < endRow; row++) {
             // const screenRow = row - startRow;
             // const height = this.getRowHeight(row);
@@ -754,7 +781,8 @@ export class Grid {
             if (this.selectionManager.getSelectionType() === "row") {
                 isRowHeaderSelected = (row === minRow);
             }
-            this.renderer.drawCell(0, rowHeaderY, this.rowHeaderWidth, rowHeaderHeight, String(row + 1), isRowHeaderSelected);
+            this.renderer.drawHeader(0, rowHeaderY, this.rowHeaderWidth, rowHeaderHeight, String(row + 1), isRowHeaderSelected);
+            this.ctx.restore();
             for (let col = startColumn; col < endColumn; col++) {
                 // const screenRow = row - startRow;
                 const x = this.getColumnX(col) - this.scrollX;
@@ -789,7 +817,11 @@ export class Grid {
                     isSelected = (row === minRow);
                 }
                 this.renderer.drawCell(x, y, width, height, value, isSelected);
+                if (row === this.activeRow && col === this.activeColumn) {
+                    this.renderer.drawActiveCell(x, y, width, height);
+                }
             }
         }
+        this.renderer.drawHeader(0, 0, this.rowHeaderWidth, this.rowHeight, "", false);
     }
 }
