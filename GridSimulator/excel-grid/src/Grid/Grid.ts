@@ -6,6 +6,8 @@ import { CommandManager } from "../Commands/CommandManager";
 import { EditCellCommand } from "../Commands/EditCellCommand";
 import { ResizeColumnCommand } from "../Commands/ResizeColumnCommand";
 import { ResizeRowCommand } from "../Commands/ResizeRowCommand";
+import type { CellEdit } from "../Commands/CellEdit";
+import { MultiCellEditCommand } from "../Commands/MultiCellEditCommand";
 
 export class Grid {
     private canvas: HTMLCanvasElement;
@@ -50,6 +52,8 @@ export class Grid {
 
     private activeRow = 0;
     private activeColumn = 0;
+
+    private clipboard = "";
 
     public getContext(): CanvasRenderingContext2D {
         return this.ctx;
@@ -310,10 +314,6 @@ export class Grid {
     }
 
     private handleMouseUp(): void {
-        console.log(
-            this.activeRow,
-            this.activeColumn
-        );
         if (this.isResizingColumn) {
             const newWidth = this.getColumnWidth(this.resizingColumn);
             const command = new ResizeColumnCommand(this.columnWidths, this.resizingColumn, this.resizeStartWidth, newWidth);
@@ -588,6 +588,55 @@ export class Grid {
             this.requestRender();
             return;
         }
+        if (event.ctrlKey && event.key === "c") {
+            const minRow = Math.min(this.selectionManager.getStartRow(), this.selectionManager.getEndRow());
+            const maxRow = Math.max(this.selectionManager.getStartRow(), this.selectionManager.getEndRow());
+
+            const minColumn = Math.min(this.selectionManager.getStartColumn(), this.selectionManager.getEndColumn());
+            const maxColumn = Math.max(this.selectionManager.getStartColumn(), this.selectionManager.getEndColumn());
+
+            const rows: string[] = [];
+            for (let row = minRow; row <= maxRow; row++) {
+                const cells: string[] = [];
+                for (let col = minColumn; col <= maxColumn; col++) {
+                    cells.push(String(this.dataStore.getCell(row, col) ?? ""));
+                }
+                rows.push(cells.join("\t"));
+            }
+            this.clipboard = rows.join("\n");
+            return;
+        }
+        if (event.ctrlKey && event.key === "v") {
+            const rows = this.clipboard.split("\n");
+            const edits: CellEdit[] = [];
+            for (let rowOffset = 0; rowOffset < rows.length; rowOffset++) {
+                const cells = rows[rowOffset].split("\t");
+                for (let colOffset = 0; colOffset < cells.length; colOffset++) {
+                    const targetRow = this.activeRow + rowOffset;
+                    const targetColumn = this.activeColumn + colOffset;
+
+                    const oldValue = this.dataStore.getCell(targetRow, targetColumn);
+                    edits.push({
+                        row: targetRow,
+                        column: targetColumn,
+                        oldValue,
+                        newValue: cells[colOffset]
+                    });
+                }
+            }
+            const command = new MultiCellEditCommand(this.dataStore, edits);
+            this.commandManager.execute(command);
+            const affectedRows = new Set<number>();
+            for (const edit of edits) {
+                affectedRows.add(edit.row);
+            }
+            for (const row of affectedRows) {
+                this.autoFitRowHeight(row);
+            }
+            this.rebuildRowOffsets();
+            this.requestRender();
+            return;
+        }
     }
 
     private beginEdit(row: number, column: number, initialValue?: string): void {
@@ -601,10 +650,10 @@ export class Grid {
         const x = rect.left + this.getColumnX(column) - this.scrollX;
         const y = rect.top + this.getRowY(row) - this.scrollY;
 
-        this.editor!.style.left = `${x}px`;
-        this.editor!.style.top = `${y}px`;
-        this.editor!.style.width = `${this.getColumnWidth(column)}px`;
-        this.editor!.style.height = `${this.getRowHeight(row)}px`;
+        this.editor!.style.left = `${x} px`;
+        this.editor!.style.top = `${y} px`;
+        this.editor!.style.width = `${this.getColumnWidth(column)} px`;
+        this.editor!.style.height = `${this.getRowHeight(row)} px`;
         this.editor!.style.display = "block";
 
         this.editor!.focus();
