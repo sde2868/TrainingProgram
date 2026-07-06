@@ -48,6 +48,9 @@ export class Grid {
     private editingColumn = -1;
     private editor?: HTMLTextAreaElement;
 
+    private activeRow = 0;
+    private activeColumn = 0;
+
     public getContext(): CanvasRenderingContext2D {
         return this.ctx;
     }
@@ -274,6 +277,8 @@ export class Grid {
         // }
         this.isSelecting = true;
         this.selectionManager.startSelection(row, column);
+        this.activeRow = row;
+        this.activeColumn = column;
     }
 
     private handleMouseMove(event: MouseEvent): void {
@@ -305,6 +310,10 @@ export class Grid {
     }
 
     private handleMouseUp(): void {
+        console.log(
+            this.activeRow,
+            this.activeColumn
+        );
         if (this.isResizingColumn) {
             const newWidth = this.getColumnWidth(this.resizingColumn);
             const command = new ResizeColumnCommand(this.columnWidths, this.resizingColumn, this.resizeStartWidth, newWidth);
@@ -344,33 +353,13 @@ export class Grid {
         }
         const { row, column } = this.getCellFromMouse(event);
         if (row < 0) return;
-        const columns = this.dataStore.getColumns();
-        // const value = this.dataStore.getCellValue(row, columns[column]);
-        let value = "";
-        if (column < columns.length) {
-            value = String(this.dataStore.getCellValue(row, columns[column]) ?? "");
-        }
-
-        this.editingRow = row;
-        this.editingColumn = column;
-        this.editor!.value = String(value ?? "");
-
-        const rect = this.canvas.getBoundingClientRect();
-
-        // const startRow = this.getRowFromY(this.scrollY);
-        // const startColumn = this.getColumnFromXVirtual(this.scrollX);
-
-        // const screenRow = row - startRow;
-
-        const x = rect.left + this.getColumnX(column) - this.scrollX;
-        const y = rect.top + this.getRowY(row) - this.scrollY;
-
-        this.editor!.style.left = `${x}px`;
-        this.editor!.style.top = `${y}px`;
-        this.editor!.style.width = `${this.getColumnWidth(column)}px`;
-        this.editor!.style.height = `${this.getRowHeight(row)}px`;
-        this.editor!.style.display = "block";
-        this.editor!.focus();
+        // const columns = this.dataStore.getColumns();
+        // // const value = this.dataStore.getCellValue(row, columns[column]);
+        // let value = "";
+        // if (column < columns.length) {
+        //     value = String(this.dataStore.getCellValue(row, columns[column]) ?? "");
+        // }
+        this.beginEdit(row, column);
     }
 
     private getWrappedLineCount(text: string, width: number): number {
@@ -393,35 +382,41 @@ export class Grid {
     }
 
     private autoFitRowHeight(row: number): void {
-        const columns = this.dataStore.getColumns();
+        const columns = this.dataStore.getColumnCount();
         let maxRequiredHeight = this.defaultRowHeight;
-        for (let col = 0; col < columns.length; col++) {
-            const value = String(this.dataStore.getCellValue(row, columns[col]) ?? "");
+        for (let col = 0; col < columns; col++) {
+            const value = String(this.dataStore.getCell(row, col) ?? "");
             const totalLines = this.getWrappedLineCount(value, this.getColumnWidth(col) - 10);
             const requiredHeight = totalLines * 16 + 8;
             maxRequiredHeight = Math.max(maxRequiredHeight, requiredHeight);
         }
         this.rowHeights[row] = maxRequiredHeight;
+        if (maxRequiredHeight > this.defaultRowHeight) {
+            this.autoFitRows.add(row);
+        } else {
+            this.autoFitRows.delete(row);
+        }
     }
 
     private saveEdit(): void {
         if (this.editingRow < 0 || this.editingColumn < 0) {
             return;
         }
-        const columns = this.dataStore.getColumns();
-        if (this.editingColumn >= columns.length) {
-            this.editor!.style.display = "none";
-            this.editingRow = -1;
-            this.editingColumn = -1;
-            return;
-        }
-        const columnName = columns[this.editingColumn];
+        // const columns = this.dataStore.getColumns();
+        // if (this.editingColumn >= columns.length) {
+        //     this.editor!.style.display = "none";
+        //     this.editingRow = -1;
+        //     this.editingColumn = -1;
+        //     return;
+        // }
+        const oldValue = this.dataStore.getCell(this.editingRow, this.editingColumn);
+        // const columnName = columns[this.editingColumn];
         // this.dataStore.setCellValue(this.editingRow, columns[this.editingColumn], this.editor!.value);
-        const oldValue = this.dataStore.getCellValue(this.editingRow, columnName);
+        // const oldValue = this.dataStore.getCellValue(this.editingRow, columnName);
         const command = new EditCellCommand(
             this.dataStore,
             this.editingRow,
-            columnName,
+            this.editingColumn,
             oldValue,
             this.editor!.value
         );
@@ -444,19 +439,175 @@ export class Grid {
         this.requestRender();
     }
 
+    private ensureActiveCellVisible(): void {
+        const cellX = this.getColumnX(this.activeColumn);
+        const cellY = this.getRowY(this.activeRow);
+
+        const cellWidth = this.getColumnWidth(this.activeColumn);
+
+        const cellHeight = this.getRowHeight(this.activeRow);
+
+        const viewportLeft = this.scrollX;
+        const viewportRight = this.scrollX + this.canvas.width - this.rowHeaderWidth;
+
+        const viewportTop = this.scrollY;
+        const viewportBottom = this.scrollY + this.canvas.height - this.rowHeight;
+
+        if (cellX - this.rowHeaderWidth < viewportLeft) {
+            this.scrollX = Math.max(0, cellX - this.rowHeaderWidth);
+        }
+        if (cellX + cellWidth > viewportRight) {
+            this.scrollX = cellX + cellWidth - this.canvas.width;
+        }
+
+        if (cellY - this.rowHeight < viewportTop) {
+            this.scrollY = Math.max(0, cellY - this.rowHeight);
+        }
+        if (cellY + cellHeight > viewportBottom) {
+            this.scrollY = cellY + cellHeight - this.canvas.height;
+        }
+    }
+
+    private moveActiveCell(): void {
+        this.selectionManager.startSelection(this.activeRow, this.activeColumn);
+        this.ensureActiveCellVisible();
+        this.requestRender();
+    }
+
     private handleKeyDown(event: KeyboardEvent): void {
+        if (this.editor?.style.display === "block") {
+            return;
+        }
+        if (event.key === "ArrowDown") {
+            this.activeRow++;
+            if (event.shiftKey) {
+                this.selectionManager.updateSelection(this.activeRow, this.activeColumn);
+                this.ensureActiveCellVisible();
+                this.requestRender();
+            } else {
+                this.moveActiveCell();
+            }
+        }
+        if (event.key === "ArrowUp") {
+            this.activeRow = Math.max(0, this.activeRow - 1);
+            if (event.shiftKey) {
+                this.selectionManager.updateSelection(this.activeRow, this.activeColumn);
+                this.ensureActiveCellVisible();
+                this.requestRender();
+            } else {
+                this.moveActiveCell();
+            }
+        }
+        if (event.key === "ArrowRight") {
+            this.activeColumn++;
+            if (event.shiftKey) {
+                this.selectionManager.updateSelection(this.activeRow, this.activeColumn);
+                this.ensureActiveCellVisible();
+                this.requestRender();
+            } else {
+                this.moveActiveCell();
+            }
+        }
+        if (event.key === "ArrowLeft") {
+            this.activeColumn = Math.max(0, this.activeColumn - 1);
+            if (event.shiftKey) {
+                this.selectionManager.updateSelection(this.activeRow, this.activeColumn);
+                this.ensureActiveCellVisible();
+                this.requestRender();
+            } else {
+                this.moveActiveCell();
+            }
+        }
+        if (event.key === "Tab") {
+            event.preventDefault();
+            if (event.shiftKey) {
+                this.activeColumn = Math.max(0, this.activeColumn - 1);
+            } else {
+                this.activeColumn++;
+            }
+            this.moveActiveCell();
+        }
+        if (event.key === "Enter" && this.editor?.style.display !== "block") {
+            event.preventDefault();
+            if (event.shiftKey) {
+                this.activeRow = Math.max(0, this.activeRow - 1);
+            } else {
+                this.activeRow++;
+            }
+            this.moveActiveCell();
+        }
         if (event.ctrlKey && event.key === "z") {
-            this.commandManager.undo();
+            const command = this.commandManager.undo();
+            if (command instanceof EditCellCommand) {
+                this.autoFitRowHeight(command.getRow());
+                this.rebuildRowOffsets();
+            }
             this.rebuildColumnOffsets();
             this.rebuildRowOffsets();
             this.requestRender();
         }
         if (event.ctrlKey && event.key === "y") {
-            this.commandManager.redo();
+            const command = this.commandManager.redo();
+            if (command instanceof EditCellCommand) {
+                this.autoFitRowHeight(command.getRow());
+                this.rebuildRowOffsets();
+            }
             this.rebuildColumnOffsets();
             this.rebuildRowOffsets();
             this.requestRender();
         }
+        if (event.key.length === 1 && !event.ctrlKey && !event.metaKey && !event.altKey) {
+            event.preventDefault();
+            this.beginEdit(this.activeRow, this.activeColumn, event.key);
+            return;
+        }
+        if (event.key === "Delete" || event.key === "Backspace") {
+            event.preventDefault();
+            const oldValue = this.dataStore.getCell(this.activeRow, this.activeColumn);
+            const command = new EditCellCommand(this.dataStore, this.activeRow, this.activeColumn, oldValue, "");
+            this.commandManager.execute(command);
+            this.autoFitRowHeight(
+                this.activeRow
+            );
+            this.rebuildRowOffsets();
+            this.requestRender();
+            return;
+        }
+        if (event.ctrlKey && event.key === "a") {
+            event.preventDefault();
+
+            const lastRow = Math.max(0, this.dataStore.getRowCount() - 1);
+            const lastColumn = Math.max(0, this.dataStore.getColumnCount() - 1);
+
+            this.activeRow = 0;
+            this.activeColumn = 0;
+            this.selectionManager.startSelection(0, 0);
+
+            this.selectionManager.updateSelection(lastRow, lastColumn);
+            this.ensureActiveCellVisible();
+            this.requestRender();
+            return;
+        }
+    }
+
+    private beginEdit(row: number, column: number, initialValue?: string): void {
+        const value = initialValue ?? String(this.dataStore.getCell(row, column) ?? "");
+
+        this.editingRow = row;
+        this.editingColumn = column;
+        this.editor!.value = value;
+
+        const rect = this.canvas.getBoundingClientRect();
+        const x = rect.left + this.getColumnX(column) - this.scrollX;
+        const y = rect.top + this.getRowY(row) - this.scrollY;
+
+        this.editor!.style.left = `${x}px`;
+        this.editor!.style.top = `${y}px`;
+        this.editor!.style.width = `${this.getColumnWidth(column)}px`;
+        this.editor!.style.height = `${this.getRowHeight(row)}px`;
+        this.editor!.style.display = "block";
+
+        this.editor!.focus();
     }
 
     constructor(
@@ -570,10 +721,11 @@ export class Grid {
                 }
 
                 // const value = this.dataStore.getCellValue(row, columns[col]);
-                let value = "";
-                if (col < columns.length) {
-                    value = String(this.dataStore.getCellValue(row, columns[col]) ?? "");
-                }
+                // let value = "";
+                // if (col < columns.length) {
+                //     value = String(this.dataStore.getCellValue(row, columns[col]) ?? "");
+                // }
+                const value = String(this.dataStore.getCell(row, col) ?? "");
                 let isSelected =
                     row >= minRow &&
                     row <= maxRow &&
