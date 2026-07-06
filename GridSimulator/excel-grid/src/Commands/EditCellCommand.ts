@@ -4,29 +4,33 @@ import { DataStore } from "../Data/DataStore";
 export class EditCellCommand implements Command {
     private dataStore: DataStore;
     private row: number;
-    private columnName: string;
+    private column: number;
     private oldValue: any;
     private newValue: any;
 
     constructor(
         dataStore: DataStore,
         row: number,
-        columnName: string,
+        column: number,
         oldValue: any,
         newValue: any
     ) {
         this.dataStore = dataStore;
         this.row = row;
-        this.columnName = columnName;
+        this.column = column;
         this.oldValue = oldValue;
         this.newValue = newValue;
     }
 
     execute(): void {
-        this.dataStore.setCellValue(this.row, this.columnName, this.newValue);
+        this.dataStore.setCellValueByIndex(this.row, this.column, this.newValue);
     }
 
     undo(): void {
-        this.dataStore.setCellValue(this.row, this.columnName, this.oldValue);
+        this.dataStore.setCellValueByIndex(this.row, this.column, this.oldValue);
+    }
+
+    public getRow(): number {
+        return this.row;
     }
 }
