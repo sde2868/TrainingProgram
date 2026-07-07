@@ -9,6 +9,12 @@ import { ResizeRowCommand } from "../Commands/ResizeRowCommand";
 import type { CellEdit } from "../Commands/CellEdit";
 import { MultiCellEditCommand } from "../Commands/MultiCellEditCommand";
 
+type GridArea =
+    | "corner"
+    | "column-header"
+    | "row-header"
+    | "cell";
+
 export class Grid {
     private canvas: HTMLCanvasElement;
     private ctx: CanvasRenderingContext2D;
@@ -55,6 +61,37 @@ export class Grid {
 
     private clipboard = "";
 
+    private statusCount: HTMLSpanElement;
+    private statusAverage: HTMLSpanElement;
+    private statusSum: HTMLSpanElement;
+
+    private getGridArea(x: number, y: number): GridArea {
+        const isInRowHeader = x < this.rowHeaderWidth;
+        const isInColumnHeader = y < this.rowHeight;
+
+        if (isInRowHeader && isInColumnHeader) {
+            return "corner";
+        }
+        if (isInColumnHeader) {
+            return "column-header";
+        }
+        if (isInRowHeader) {
+            return "row-header";
+        }
+        return "cell";
+    }
+
+    private getCanvasMousePosition(event: MouseEvent): { x: number; y: number } {
+        const rect = this.canvas.getBoundingClientRect();
+        const scaleX = this.canvas.width / rect.width;
+        const scaleY = this.canvas.height / rect.height;
+
+        const x = (event.clientX - rect.left) * scaleX;
+        const y = (event.clientY - rect.top) * scaleY;
+
+        return { x, y };
+    }
+
     public getContext(): CanvasRenderingContext2D {
         return this.ctx;
     }
@@ -74,19 +111,6 @@ export class Grid {
     private getRowY(row: number): number {
         return this.rowOffsets[row];
     }
-
-    // private getColumnFromX(x: number): number {
-    //     let currentX = this.rowHeaderWidth;
-    //     const columns = this.dataStore.getColumns();
-    //     for (let col = 0; col < this.totalColumns; col++) {
-    //         const width = this.getColumnWidth(col);
-    //         if (x >= currentX && x < currentX + width) {
-    //             return col;
-    //         }
-    //         currentX += width;
-    //     }
-    //     return -1;
-    // }
 
     private getColumnFromXVirtual(x: number): number {
         let low = 0;
@@ -170,11 +194,14 @@ export class Grid {
         }
     }
 
-    private getCellFromMouse(event: MouseEvent) {
+    private getCellFromMouse(event: MouseEvent): { row: number; column: number } {
+        const mouse = this.getCanvasMousePosition(event);
+        const worldX = mouse.x + this.scrollX;
+        const worldY = mouse.y + this.scrollY;
         return {
-            row: this.getRowFromY(event.offsetY + this.scrollY),
-            column: this.getColumnFromXVirtual(event.offsetX + this.scrollX)
-        }
+            row: this.getRowFromY(worldY),
+            column: this.getColumnFromXVirtual(worldX)
+        };
     }
 
     private getTotalHeight(): number {
@@ -215,99 +242,99 @@ export class Grid {
         });
     }
 
+    private updateStatistics(): void {
+        const stats = this.statisticsManager.calculateSelection(this.dataStore, this.selectionManager);
+        this.statusCount.textContent = `Count: ${stats.count}`;
+        this.statusAverage.textContent = `Average: ${stats.average.toFixed(2)}`;
+        this.statusSum.textContent = `Sum: ${stats.sum}`;
+    }
+
+    private clampScroll(): void {
+        const maxScrollX = Math.max(0, this.getTotalWidth() - this.canvas.width);
+        const maxScrollY = Math.max(0, this.getTotalHeight() - this.canvas.height);
+        this.scrollX = Math.max(0, Math.min(this.scrollX, maxScrollX));
+        this.scrollY = Math.max(0, Math.min(this.scrollY, maxScrollY));
+    }
+
     private handleWheel(event: WheelEvent): void {
         event.preventDefault();
         this.scrollX += event.deltaX;
         this.scrollY += event.deltaY;
 
-        const maxScrollY = Math.max(0, this.getTotalHeight() - this.canvas.height);
-        const maxScrollX = Math.max(0, this.getTotalWidth() - this.canvas.width);
-
-        this.scrollY = Math.max(0, Math.min(this.scrollY, maxScrollY));
-        this.scrollX = Math.max(0, Math.min(this.scrollX, maxScrollX));
-        // console.log(
-        //     "scrollX", this.scrollX,
-        //     "scrollY", this.scrollY
-        // );
+        this.clampScroll();
         this.requestRender();
     }
-    // private handleClick(event: MouseEvent): void {
-    //     const startRow = Math.floor(this.scrollY / this.rowHeight);
-    //     const startColumn = Math.floor(this.scrollX / this.columnWidth);
-    //     const clickedColumn = startColumn + Math.floor(event.offsetX / this.columnWidth);
-    //     const clickedRow = startRow + Math.floor(event.offsetY / this.rowHeight) - 1;
-    //     if (clickedRow < 0) {
-    //         return;
-    //     }
-    //     // this.selectionManager.selectCell(clickedRow, clickedColumn);
-    //     console.log(clickedRow, clickedColumn);
-    //     this.Render();
-    // }
+
     private handleMouseDown(event: MouseEvent): void {
         if (this.editor && this.editor.style.display === "block") {
             this.editor.style.display = "none";
             this.saveEdit();
         }
+        const mouse = this.getCanvasMousePosition(event);
+        const worldX = mouse.x + this.scrollX;
+        const worldY = mouse.y + this.scrollY;
+        const area = this.getGridArea(mouse.x, mouse.y);
         const { row, column } = this.getCellFromMouse(event);
-
-        const resizeRow = this.getResizeRow(event.offsetY + this.scrollY);
-        if (resizeRow >= 0 && event.offsetX < this.rowHeaderWidth) {
-            this.isResizingRow = true;
-            this.resizingRow = resizeRow;
-            this.resizeStartHeight = this.getRowHeight(resizeRow);
+        if (area === "corner") {
+            this.selectAll();
             return;
         }
-        if (event.offsetX < this.rowHeaderWidth) {
-            if (row >= 0) {
-                this.selectionManager.selectRow(row);
-                this.requestRender();
-            }
-            return;
-        }
-        if (event.offsetY < this.rowHeight) {
-            const resizeColumn = this.getResizeColumn(event.offsetX + this.scrollX);
-            if (resizeColumn >= 0) {
-                this.resizeStartWidth = this.getColumnWidth(resizeColumn);
-                this.isResizingColumn = true;
-                this.resizingColumn = resizeColumn;
+        if (area === "row-header") {
+            const resizeRow = this.getResizeRow(worldY);
+            if (resizeRow >= 0) {
+                this.isResizingRow = true;
+                this.resizingRow = resizeRow;
+                this.resizeStartHeight = this.getRowHeight(resizeRow);
                 return;
             }
-            this.selectionManager.selectColumn(column);
+            this.selectionManager.selectRow(row);
+            this.updateStatistics();
             this.requestRender();
             return;
         }
-        // if (row < 0) {
-        //     return;
-        // }
+        if (area === "column-header") {
+            const resizeColumn = this.getResizeColumn(worldX);
+            if (resizeColumn >= 0) {
+                this.isResizingColumn = true;
+                this.resizingColumn = resizeColumn;
+                this.resizeStartWidth = this.getColumnWidth(resizeColumn);
+                return;
+            }
+            this.selectionManager.selectColumn(column);
+            this.updateStatistics();
+            this.requestRender();
+            return;
+        }
         this.isSelecting = true;
         this.selectionManager.startSelection(row, column);
         this.activeRow = row;
         this.activeColumn = column;
+        this.updateStatistics();
+        this.requestRender();
     }
 
     private handleMouseMove(event: MouseEvent): void {
+        const mouse = this.getCanvasMousePosition(event);
         if (!this.isResizingColumn && !this.isResizingRow) {
-            const mouseX = event.offsetX + this.scrollX;
-            const mouseY = event.offsetY + this.scrollY;
-            if (
-                event.offsetY < this.rowHeight &&
-                this.getResizeColumn(mouseX) >= 0
-            ) {
+            const mouseX = mouse.x + this.scrollX;
+            const mouseY = mouse.y + this.scrollY;
+            const area = this.getGridArea(mouse.x, mouse.y);
+            if (area === "column-header" && this.getResizeColumn(mouseX) >= 0) {
                 this.canvas.style.cursor = "col-resize";
             }
-            else if (
-                event.offsetX < this.rowHeaderWidth &&
-                this.getResizeRow(mouseY) >= 0
-            ) {
+            else if (area === "row-header" && this.getResizeRow(mouseY) >= 0) {
                 this.canvas.style.cursor = "row-resize";
             }
-            else {
+            else if (area === "cell") {
                 this.canvas.style.cursor = "cell";
+            }
+            else {
+                this.canvas.style.cursor = "default";
             }
         }
         if (this.isResizingColumn) {
             const x = this.getColumnX(this.resizingColumn);
-            const newWidth = event.offsetX + this.scrollX - x;
+            const newWidth = mouse.x + this.scrollX - x;
             this.columnWidths[this.resizingColumn] = Math.max(50, newWidth);
             this.rebuildColumnOffsets();
             this.requestRender();
@@ -315,7 +342,7 @@ export class Grid {
         }
         if (this.isResizingRow) {
             const y = this.getRowY(this.resizingRow);
-            const newHeight = event.offsetY + this.scrollY - y;
+            const newHeight = mouse.y + this.scrollY - y;
             this.rowHeights[this.resizingRow] = Math.max(20, newHeight);
             this.rebuildRowOffsets();
             this.requestRender();
@@ -359,25 +386,17 @@ export class Grid {
             return;
         }
         this.isSelecting = false;
-        // this.selectionManager.clearSelection();
-        const values = this.statisticsManager.getSelectedNumericValues(this.dataStore, this.selectionManager);
-        const stats = this.statisticsManager.calculate(values);
-        console.log(stats);
+        this.updateStatistics();
         this.requestRender();
     }
 
     private handleDoubleClick(event: MouseEvent): void {
-        if (event.offsetX < this.rowHeaderWidth) {
+        const mouse = this.getCanvasMousePosition(event);
+        if (mouse.x < this.rowHeaderWidth || mouse.y < this.rowHeight) {
             return;
         }
         const { row, column } = this.getCellFromMouse(event);
         if (row < 0) return;
-        // const columns = this.dataStore.getColumns();
-        // // const value = this.dataStore.getCellValue(row, columns[column]);
-        // let value = "";
-        // if (column < columns.length) {
-        //     value = String(this.dataStore.getCellValue(row, columns[column]) ?? "");
-        // }
         this.beginEdit(row, column);
     }
 
@@ -421,17 +440,7 @@ export class Grid {
         if (this.editingRow < 0 || this.editingColumn < 0) {
             return;
         }
-        // const columns = this.dataStore.getColumns();
-        // if (this.editingColumn >= columns.length) {
-        //     this.editor!.style.display = "none";
-        //     this.editingRow = -1;
-        //     this.editingColumn = -1;
-        //     return;
-        // }
         const oldValue = this.dataStore.getCell(this.editingRow, this.editingColumn);
-        // const columnName = columns[this.editingColumn];
-        // this.dataStore.setCellValue(this.editingRow, columns[this.editingColumn], this.editor!.value);
-        // const oldValue = this.dataStore.getCellValue(this.editingRow, columnName);
         const command = new EditCellCommand(
             this.dataStore,
             this.editingRow,
@@ -440,8 +449,6 @@ export class Grid {
             this.editor!.value
         );
         this.commandManager.execute(command);
-        // const ctx = this.getContext();
-        // const cellWidth = this.getColumnWidth(this.editingColumn) - 10;
         const lineHeight = 16;
         const totalLines = this.getWrappedLineCount(this.editor!.value, this.getColumnWidth(this.editingColumn) - 10);
         const requiredHeight = Math.max(this.defaultRowHeight, totalLines * lineHeight + 8);
@@ -459,37 +466,53 @@ export class Grid {
     }
 
     private ensureActiveCellVisible(): void {
-        const cellX = this.getColumnX(this.activeColumn);
-        const cellY = this.getRowY(this.activeRow);
+        const cellLeft = this.getColumnX(this.activeColumn);
+        const cellRight = cellLeft + this.getColumnWidth(this.activeColumn);
 
-        const cellWidth = this.getColumnWidth(this.activeColumn);
+        const cellTop = this.getRowY(this.activeRow);
+        const cellBottom = cellTop + this.getRowHeight(this.activeRow);
 
-        const cellHeight = this.getRowHeight(this.activeRow);
+        const viewportLeft = this.scrollX + this.rowHeaderWidth;
+        const viewportRight = this.scrollX + this.canvas.width;
 
-        const viewportLeft = this.scrollX;
-        const viewportRight = this.scrollX + this.canvas.width - this.rowHeaderWidth;
+        const viewportTop = this.scrollY + this.rowHeight;
+        const viewportBottom = this.scrollY + this.canvas.height;
 
-        const viewportTop = this.scrollY;
-        const viewportBottom = this.scrollY + this.canvas.height - this.rowHeight;
-
-        if (cellX - this.rowHeaderWidth < viewportLeft) {
-            this.scrollX = Math.max(0, cellX - this.rowHeaderWidth);
+        if (cellLeft < viewportLeft) {
+            this.scrollX = cellLeft - this.rowHeaderWidth;
         }
-        if (cellX + cellWidth > viewportRight) {
-            this.scrollX = cellX + cellWidth - this.canvas.width;
+        else if (cellRight > viewportRight) {
+            this.scrollX = cellRight - this.canvas.width;
         }
 
-        if (cellY - this.rowHeight < viewportTop) {
-            this.scrollY = Math.max(0, cellY - this.rowHeight);
+        if (cellTop < viewportTop) {
+            this.scrollY = cellTop - this.rowHeight;
         }
-        if (cellY + cellHeight > viewportBottom) {
-            this.scrollY = cellY + cellHeight - this.canvas.height;
+        else if (cellBottom > viewportBottom) {
+            this.scrollY = cellBottom - this.canvas.height;
         }
+        this.clampScroll();
+    }
+
+    private selectAll(): void {
+        this.activeRow = 0;
+        this.activeColumn = 0;
+        this.selectionManager.selectAll();
+        this.updateStatistics();
+        this.requestRender();
     }
 
     private moveActiveCell(): void {
         this.selectionManager.startSelection(this.activeRow, this.activeColumn);
         this.ensureActiveCellVisible();
+        this.updateStatistics();
+        this.requestRender();
+    }
+
+    private extendSelectionToActiveCell(): void {
+        this.selectionManager.updateSelection(this.activeRow, this.activeColumn);
+        this.ensureActiveCellVisible();
+        this.updateStatistics();
         this.requestRender();
     }
 
@@ -497,85 +520,84 @@ export class Grid {
         if (this.editor?.style.display === "block") {
             return;
         }
+        const isModifierKey = event.ctrlKey || event.metaKey;
         if (event.key === "ArrowDown") {
-            this.activeRow++;
+            event.preventDefault();
+            this.activeRow = Math.max(0, Math.min(this.activeRow + 1, this.totalRows - 1));
             if (event.shiftKey) {
-                this.selectionManager.updateSelection(this.activeRow, this.activeColumn);
-                this.ensureActiveCellVisible();
-                this.requestRender();
+                this.extendSelectionToActiveCell();
             } else {
                 this.moveActiveCell();
             }
+            return;
         }
         if (event.key === "ArrowUp") {
-            this.activeRow = Math.max(0, this.activeRow - 1);
+            event.preventDefault();
+            this.activeRow = Math.max(0, Math.min(this.activeRow - 1, this.totalRows - 1));
             if (event.shiftKey) {
-                this.selectionManager.updateSelection(this.activeRow, this.activeColumn);
-                this.ensureActiveCellVisible();
-                this.requestRender();
+                this.extendSelectionToActiveCell();
             } else {
                 this.moveActiveCell();
             }
+            return;
         }
         if (event.key === "ArrowRight") {
-            this.activeColumn++;
+            event.preventDefault();
+            this.activeColumn = Math.max(0, Math.min(this.activeColumn + 1, this.totalColumns - 1));
             if (event.shiftKey) {
-                this.selectionManager.updateSelection(this.activeRow, this.activeColumn);
-                this.ensureActiveCellVisible();
-                this.requestRender();
+                this.extendSelectionToActiveCell();
             } else {
                 this.moveActiveCell();
             }
+            return;
         }
         if (event.key === "ArrowLeft") {
-            this.activeColumn = Math.max(0, this.activeColumn - 1);
+            event.preventDefault();
+            this.activeColumn = Math.max(0, Math.min(this.activeColumn - 1, this.totalColumns - 1));
             if (event.shiftKey) {
-                this.selectionManager.updateSelection(this.activeRow, this.activeColumn);
-                this.ensureActiveCellVisible();
-                this.requestRender();
+                this.extendSelectionToActiveCell();
             } else {
                 this.moveActiveCell();
             }
+            return;
         }
         if (event.key === "Tab") {
             event.preventDefault();
-            if (event.shiftKey) {
-                this.activeColumn = Math.max(0, this.activeColumn - 1);
-            } else {
-                this.activeColumn++;
-            }
+            const direction = event.shiftKey ? -1 : 1;
+            this.activeColumn = Math.max(0, Math.min(this.activeColumn + direction, this.totalColumns - 1));
             this.moveActiveCell();
+            return;
         }
-        if (event.key === "Enter" && this.editor?.style.display !== "block") {
+        if (event.key === "Enter") {
             event.preventDefault();
-            if (event.shiftKey) {
-                this.activeRow = Math.max(0, this.activeRow - 1);
-            } else {
-                this.activeRow++;
-            }
+            const direction = event.shiftKey ? -1 : 1;
+            this.activeRow = Math.max(0, Math.min(this.activeRow + direction, this.totalRows - 1));
             this.moveActiveCell();
+            return;
         }
-        if (event.ctrlKey && event.key === "z") {
+        if (isModifierKey && event.key.toLowerCase() === "z" && !event.shiftKey) {
+            event.preventDefault();
             const command = this.commandManager.undo();
             if (command instanceof EditCellCommand) {
                 this.autoFitRowHeight(command.getRow());
-                this.rebuildRowOffsets();
             }
             this.rebuildColumnOffsets();
             this.rebuildRowOffsets();
             this.requestRender();
+            return;
         }
-        if (event.ctrlKey && event.key === "y") {
+        if ((isModifierKey && event.key.toLowerCase() === "y") || (isModifierKey && event.shiftKey && event.key.toLowerCase() === "z")) {
+            event.preventDefault();
             const command = this.commandManager.redo();
             if (command instanceof EditCellCommand) {
                 this.autoFitRowHeight(command.getRow());
-                this.rebuildRowOffsets();
             }
             this.rebuildColumnOffsets();
             this.rebuildRowOffsets();
             this.requestRender();
+            return;
         }
-        if (event.key.length === 1 && !event.ctrlKey && !event.metaKey && !event.altKey) {
+        if (event.key.length === 1 && !isModifierKey && !event.altKey) {
             event.preventDefault();
             this.beginEdit(this.activeRow, this.activeColumn, event.key);
             return;
@@ -594,26 +616,23 @@ export class Grid {
         }
         if (event.ctrlKey && event.key === "a") {
             event.preventDefault();
-
-            const lastRow = Math.max(0, this.dataStore.getRowCount() - 1);
-            const lastColumn = Math.max(0, this.dataStore.getColumnCount() - 1);
-
-            this.activeRow = 0;
-            this.activeColumn = 0;
-            this.selectionManager.startSelection(0, 0);
-
-            this.selectionManager.updateSelection(lastRow, lastColumn);
-            this.ensureActiveCellVisible();
-            this.requestRender();
+            this.selectAll();
             return;
         }
-        if (event.ctrlKey && event.key === "c") {
-            const minRow = Math.min(this.selectionManager.getStartRow(), this.selectionManager.getEndRow());
-            const maxRow = Math.max(this.selectionManager.getStartRow(), this.selectionManager.getEndRow());
-
-            const minColumn = Math.min(this.selectionManager.getStartColumn(), this.selectionManager.getEndColumn());
-            const maxColumn = Math.max(this.selectionManager.getStartColumn(), this.selectionManager.getEndColumn());
-
+        if (isModifierKey && event.key.toLowerCase() === "c") {
+            event.preventDefault();
+            const bounds = this.selectionManager.getBounds(this.totalRows, this.totalColumns);
+            if (!bounds) {
+                return;
+            }
+            const { minRow, maxRow, minColumn, maxColumn } = bounds;
+            const selectedRowCount = maxRow - minRow + 1;
+            const selectedColumnCount = maxColumn - minColumn + 1;
+            const selectedCellCount = selectedRowCount * selectedColumnCount;
+            if (selectedCellCount > 100000) {
+                console.warn(`Copy blocked: ${selectedCellCount} cells selected`);
+                return;
+            }
             const rows: string[] = [];
             for (let row = minRow; row <= maxRow; row++) {
                 const cells: string[] = [];
@@ -625,7 +644,8 @@ export class Grid {
             this.clipboard = rows.join("\n");
             return;
         }
-        if (event.ctrlKey && event.key === "v") {
+        if (isModifierKey && event.key.toLowerCase() === "v") {
+            event.preventDefault();
             const rows = this.clipboard.split("\n");
             const edits: CellEdit[] = [];
             for (let rowOffset = 0; rowOffset < rows.length; rowOffset++) {
@@ -666,15 +686,23 @@ export class Grid {
         this.editor!.value = value;
 
         const rect = this.canvas.getBoundingClientRect();
-        const x = rect.left + this.getColumnX(column) - this.scrollX;
-        const y = rect.top + this.getRowY(row) - this.scrollY;
+        const scaleX = rect.width / this.canvas.width;
+        const scaleY = rect.height / this.canvas.height;
+
+        const canvasX = (this.getColumnX(column) - this.scrollX);
+        const canvasY = (this.getRowY(row) - this.scrollY);
+
+        const x = rect.left + canvasX * scaleX;
+        const y = rect.top + canvasY * scaleY;
+
+        const width = this.getColumnWidth(column) * scaleX;
+        const height = this.getRowHeight(row) * scaleY;
 
         this.editor!.style.left = `${x}px`;
         this.editor!.style.top = `${y}px`;
-        this.editor!.style.width = `${this.getColumnWidth(column)}px`;
-        this.editor!.style.height = `${this.getRowHeight(row)}px`;
+        this.editor!.style.width = `${width}px`;
+        this.editor!.style.height = `${height}px`;
         this.editor!.style.display = "block";
-
         this.editor!.focus();
     }
 
@@ -684,9 +712,15 @@ export class Grid {
         dataStore: DataStore,
         selectionManager: SelectionManager,
         statisticsManager: StatisticsManager,
-        commandManager: CommandManager
+        commandManager: CommandManager,
+        statusCount: HTMLSpanElement,
+        statusAverage: HTMLSpanElement,
+        statusSum: HTMLSpanElement
     ) {
         this.canvas = canvas;
+        this.statusCount = statusCount;
+        this.statusAverage = statusAverage;
+        this.statusSum = statusSum;
         this.ctx = ctx;
         this.renderer = new Renderer(ctx);
         this.dataStore = dataStore;
@@ -694,7 +728,6 @@ export class Grid {
         this.statisticsManager = statisticsManager;
         this.commandManager = commandManager;
         this.canvas.addEventListener("wheel", this.handleWheel.bind(this), { passive: false });
-        // this.canvas.addEventListener("click", this.handleClick.bind(this));
         this.canvas.addEventListener("mousedown", this.handleMouseDown.bind(this));
         this.canvas.addEventListener("mousemove", this.handleMouseMove.bind(this));
         this.canvas.addEventListener("mouseup", this.handleMouseUp.bind(this));
@@ -702,9 +735,6 @@ export class Grid {
         window.addEventListener("keydown", this.handleKeyDown.bind(this));
 
         this.editor = document.createElement("textarea");
-        // this.editor.style.resize = "none";
-        // this.editor.style.overflow = "hidden";
-        // this.editor.style.position = "absolute";
         this.editor.style.display = "none";
         document.body.appendChild(this.editor);
 
@@ -714,39 +744,29 @@ export class Grid {
                 this.saveEdit();
             }
         });
-        // const columns = this.dataStore.getColumns();
         this.columnWidths = new Array(this.totalColumns).fill(this.defaultColumnWidth);
         this.rowHeights = new Array(this.totalRows).fill(this.defaultRowHeight);
         this.rebuildRowOffsets();
         this.rebuildColumnOffsets();
+        this.updateStatistics();
     }
 
-    render(): void {
-        
-        const columns = this.dataStore.getColumns();
+    private renderCornerHeader(): void {
+        const isSelected = this.selectionManager.getSelectionType() === "all";
+        this.renderer.drawHeader(0, 0, this.rowHeaderWidth, this.rowHeight, "", isSelected);
+    }
 
-        // const visibleRows = Math.ceil(this.canvas.height / this.rowHeight);
-        // const visibleColumns = Math.ceil((this.canvas.width - this.rowHeaderWidth) / this.columnWidth);
-        // const visibleRows = this.dataStore.getRowCount();
-        // const visibleColumns = columns.length;
+    private renderColumnHeaders(): void {
+        const selectionType = this.selectionManager.getSelectionType();
+        const bounds = this.selectionManager.getBounds(this.totalRows, this.totalColumns);
+        if (!bounds) {
+            return;
+        }
+        const { minRow, maxRow, minColumn, maxColumn } = bounds;
+        const columns = this.dataStore.getColumns();
         const viewportRight = this.scrollX + this.canvas.width;
         const startColumn = this.getColumnFromXVirtual(this.scrollX);
         const endColumn = Math.min(this.totalColumns, this.getColumnFromXVirtual(viewportRight) + 2);
-
-        const startRow = this.getRowFromY(this.scrollY);
-        // const startColumn = this.getColumnFromXVirtual(this.scrollX);
-
-        const maxRows = this.totalRows;
-        const viewportBottom = this.scrollY + this.canvas.height;
-        const endRow = Math.min(maxRows, this.getRowFromY(viewportBottom) + 2);
-        // const endColumn = this.getColumnFromXVirtual(this.scrollX + this.canvas.width) + 1;
-
-        const minRow = Math.min(this.selectionManager.getStartRow(), this.selectionManager.getEndRow());
-        const maxRow = Math.max(this.selectionManager.getStartRow(), this.selectionManager.getEndRow());
-
-        const minColumn = Math.min(this.selectionManager.getStartColumn(), this.selectionManager.getEndColumn());
-        const maxColumn = Math.max(this.selectionManager.getStartColumn(), this.selectionManager.getEndColumn());
-
         this.ctx.save();
         this.ctx.beginPath();
         this.ctx.rect(this.rowHeaderWidth, 0, this.canvas.width - this.rowHeaderWidth, this.rowHeight);
@@ -754,74 +774,83 @@ export class Grid {
         for (let col = startColumn; col < endColumn; col++) {
             const x = this.getColumnX(col) - this.scrollX;
             const width = this.getColumnWidth(col);
-            let isSelected = false;
-            if (this.selectionManager.getSelectionType() === "column") {
-                isSelected = (col === minColumn);
-            }
-            // this.renderer.drawCell(x, 0, width, this.rowHeight, ((columns[col] !== undefined) ? columns[col] : ""), isSelected);
+            const isSelected = (selectionType === "column" || selectionType === "all") && col >= minColumn && col <= maxColumn;
             const headerText = col < columns.length ? columns[col] : this.getExcelColumnName(col);
             this.renderer.drawHeader(x, 0, width, this.rowHeight, headerText, isSelected);
         }
         this.ctx.restore();
-        // let currentY = this.rowHeight;
+    }
+
+    private renderRowHeaders(): void {
+        const selectionType = this.selectionManager.getSelectionType();
+        const bounds = this.selectionManager.getBounds(this.totalRows, this.totalColumns);
+        if (!bounds) {
+            return;
+        }
+        const { minRow, maxRow, minColumn, maxColumn } = bounds;
+        const viewportBottom = this.scrollY + this.canvas.height;
+        const startRow = this.getRowFromY(this.scrollY);
+        const endRow = Math.min(this.totalRows, this.getRowFromY(viewportBottom) + 2);
         this.ctx.save();
         this.ctx.beginPath();
         this.ctx.rect(0, this.rowHeight, this.rowHeaderWidth, this.canvas.height - this.rowHeight);
         this.ctx.clip();
         for (let row = startRow; row < endRow; row++) {
-            // const screenRow = row - startRow;
-            // const height = this.getRowHeight(row);
-            // const y = currentY;
-            const rowHeaderY = this.getRowY(row) - this.scrollY;
-            const rowHeaderHeight = this.getRowHeight(row);
-            let isRowHeaderSelected = false;
-            if (rowHeaderY + rowHeaderHeight < 0 || rowHeaderY > this.canvas.height) {
-                continue;
-            }
-            if (this.selectionManager.getSelectionType() === "row") {
-                isRowHeaderSelected = (row === minRow);
-            }
-            this.renderer.drawHeader(0, rowHeaderY, this.rowHeaderWidth, rowHeaderHeight, String(row + 1), isRowHeaderSelected);
-            this.ctx.restore();
+            const y = this.getRowY(row) - this.scrollY;
+            const height = this.getRowHeight(row);
+            const isSelected = (selectionType === "row" || selectionType === "all") && row >= minRow && row <= maxRow;
+            this.renderer.drawHeader(0, y, this.rowHeaderWidth, height, String(row + 1), isSelected);
+        }
+        this.ctx.restore();
+    }
+
+    private renderCells(): void {
+        const viewportRight = this.scrollX + this.canvas.width;
+        const viewportBottom = this.scrollY + this.canvas.height;
+        const startColumn = this.getColumnFromXVirtual(this.scrollX);
+        const endColumn = Math.min(this.totalColumns, this.getColumnFromXVirtual(viewportRight) + 2);
+        const startRow = this.getRowFromY(this.scrollY);
+        const endRow = Math.min(this.totalRows, this.getRowFromY(viewportBottom) + 2);
+        const bounds = this.selectionManager.getBounds(this.totalRows, this.totalColumns);
+        if (!bounds) {
+            return;
+        }
+        const { minRow, maxRow, minColumn, maxColumn } = bounds;
+        this.ctx.save();
+        this.ctx.beginPath();
+        this.ctx.rect(
+            this.rowHeaderWidth,
+            this.rowHeight,
+            this.canvas.width - this.rowHeaderWidth,
+            this.canvas.height - this.rowHeight
+        );
+        this.ctx.clip();
+        for (let row = startRow; row < endRow; row++) {
+            const y = this.getRowY(row) - this.scrollY;
+            const height = this.getRowHeight(row);
             for (let col = startColumn; col < endColumn; col++) {
-                // const screenRow = row - startRow;
                 const x = this.getColumnX(col) - this.scrollX;
                 const width = this.getColumnWidth(col);
-                if (x + width < 0 || x > this.canvas.width) {
-                    continue;
-                }
-
-                const y = this.getRowY(row) - this.scrollY;
-                const height = this.getRowHeight(row);
-                if (y + height < 0 || y > this.canvas.height) {
-                    continue;
-                }
-
-                // const value = this.dataStore.getCellValue(row, columns[col]);
-                // let value = "";
-                // if (col < columns.length) {
-                //     value = String(this.dataStore.getCellValue(row, columns[col]) ?? "");
-                // }
                 const value = String(this.dataStore.getCell(row, col) ?? "");
-                let isSelected =
+                const isSelected =
                     row >= minRow &&
                     row <= maxRow &&
                     col >= minColumn &&
                     col <= maxColumn;
-
-                const selectionType = this.selectionManager.getSelectionType();
-                if (selectionType === "column") {
-                    isSelected = (col === minColumn);
-                }
-                if (selectionType === "row") {
-                    isSelected = (row === minRow);
-                }
                 this.renderer.drawCell(x, y, width, height, value, isSelected);
                 if (row === this.activeRow && col === this.activeColumn) {
                     this.renderer.drawActiveCell(x, y, width, height);
                 }
             }
         }
-        this.renderer.drawHeader(0, 0, this.rowHeaderWidth, this.rowHeight, "", false);
+        this.ctx.restore();
+    }
+
+    render(): void {
+        this.renderer.clear(this.canvas.width, this.canvas.height);
+        this.renderCells();
+        this.renderColumnHeaders();
+        this.renderRowHeaders();
+        this.renderCornerHeader();
     }
 }
