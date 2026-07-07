@@ -6,16 +6,17 @@ import { StatisticsManager } from "./Stats/StatisticsManager";
 import { CommandManager } from "./Commands/CommandManager";
 
 const canvas = document.getElementById("gridCanvas") as HTMLCanvasElement;
+const statusCount = document.getElementById("statusCount") as HTMLSpanElement;
+const statusAverage = document.getElementById("statusAverage") as HTMLSpanElement;
+const statusSum = document.getElementById("statusSum") as HTMLSpanElement;
 const ctx = canvas.getContext("2d");
 if (!ctx) {
   throw new Error("Canvas context not found");
 }
 canvas.width = window.innerWidth;
-canvas.height = window.innerHeight;
+canvas.height = window.innerHeight - 28;
 
-function generateData(
-    count: number
-): Record<string, any>[] {
+function generateData(count: number): Record<string, any>[] {
     const data = [];
 
     for (let i = 1; i <= count; i++) {
@@ -36,28 +37,6 @@ dataStore.setData(generateData(50000));
 const selectionManager = new SelectionManager();
 const statisticsManager = new StatisticsManager();
 const commandManager = new CommandManager();
-// dataStore.setCellValue(
-//     0,
-//     "firstName",
-//     "Harsh"
-// );
-
-const grid = new Grid(canvas, ctx, dataStore, selectionManager, statisticsManager, commandManager);
+const grid = new Grid(canvas, ctx, dataStore, selectionManager, statisticsManager, commandManager, statusCount, statusAverage, statusSum);
 
 grid.render();
-
-// canvas.width = window.innerWidth;
-// canvas.height = window.innerHeight;
-
-// for (let row = 0; row < 10; row++) {
-//   for (let col = 0; col < 5; col++) {
-//     ctx.strokeRect(
-//       col * 100,
-//       row * 30,
-//       100,
-//       30
-//     );
-//   }
-// }
-// ctx.strokeRect(50, 50, 100, 30);
-// ctx.fillText("Hello", 60, 70);
