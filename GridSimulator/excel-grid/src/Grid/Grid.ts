@@ -8,6 +8,7 @@ import { ResizeColumnCommand } from "../Commands/ResizeColumnCommand";
 import { ResizeRowCommand } from "../Commands/ResizeRowCommand";
 import type { CellEdit } from "../Commands/CellEdit";
 import { MultiCellEditCommand } from "../Commands/MultiCellEditCommand";
+import { FormulaEngine } from "../Formula/FormulaEngine";
 
 type GridArea =
     | "corner"
@@ -64,6 +65,8 @@ export class Grid {
     private statusCount: HTMLSpanElement;
     private statusAverage: HTMLSpanElement;
     private statusSum: HTMLSpanElement;
+
+    private formulaEngine: FormulaEngine;
 
     private getGridArea(x: number, y: number): GridArea {
         const isInRowHeader = x < this.rowHeaderWidth;
@@ -516,7 +519,24 @@ export class Grid {
         this.requestRender();
     }
 
+    private cancelEdit(): void {
+        if (!this.editor) {
+            return;
+        }
+        this.editor.style.display = "none";
+        this.editingRow = -1;
+        this.editingColumn = -1;
+        this.requestRender();
+    }
+
     private handleKeyDown(event: KeyboardEvent): void {
+        if (this.editor?.style.display === "block") {
+            if (event.key === "Escape") {
+                event.preventDefault();
+                this.cancelEdit();
+            }
+            return;
+        }
         if (this.editor?.style.display === "block") {
             return;
         }
@@ -715,7 +735,8 @@ export class Grid {
         commandManager: CommandManager,
         statusCount: HTMLSpanElement,
         statusAverage: HTMLSpanElement,
-        statusSum: HTMLSpanElement
+        statusSum: HTMLSpanElement,
+        formulaEngine: FormulaEngine
     ) {
         this.canvas = canvas;
         this.statusCount = statusCount;
@@ -749,6 +770,7 @@ export class Grid {
         this.rebuildRowOffsets();
         this.rebuildColumnOffsets();
         this.updateStatistics();
+        this.formulaEngine = new FormulaEngine();
     }
 
     private renderCornerHeader(): void {
@@ -831,13 +853,14 @@ export class Grid {
             for (let col = startColumn; col < endColumn; col++) {
                 const x = this.getColumnX(col) - this.scrollX;
                 const width = this.getColumnWidth(col);
-                const value = String(this.dataStore.getCell(row, col) ?? "");
+                const rawValue = String(this.dataStore.getCell(row, col) ?? "");
+                const displayValue = this.formulaEngine.evaluate(rawValue, this.dataStore);
                 const isSelected =
                     row >= minRow &&
                     row <= maxRow &&
                     col >= minColumn &&
                     col <= maxColumn;
-                this.renderer.drawCell(x, y, width, height, value, isSelected);
+                this.renderer.drawCell(x, y, width, height, String(displayValue), isSelected);
                 if (row === this.activeRow && col === this.activeColumn) {
                     this.renderer.drawActiveCell(x, y, width, height);
                 }
