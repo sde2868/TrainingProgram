@@ -20,19 +20,16 @@ export class Renderer {
     }
     drawCell(x: number, y: number, width: number, height: number, value: string, isSelected: boolean): number {
         this.ctx.strokeRect(x, y, width, height);
-        // this.ctx.fillText(value, x + 5, y + 20);
         this.ctx.save();
         if (isSelected) {
             this.ctx.fillStyle = "#dbeafe";
             this.ctx.fillRect(x, y, width, height);
         }
-        // this.ctx.strokeRect(x, y, width, height);
         this.ctx.beginPath();
         this.ctx.rect(x + 1, y + 1, width - 2, height - 2);
         this.ctx.clip();
 
         this.ctx.fillStyle = "#000000";
-        // this.ctx.fillText(value, x + 5, y + 20);
         const lines: string[] = [];
         for (const rawLine of value.split("\n")) {
             let currentLine = "";
@@ -51,7 +48,6 @@ export class Renderer {
         }
         const lineHeight = 16;
         const requiredHeight = (lines.length * lineHeight) + 8;
-        // return requiredHeight;
         if (requiredHeight > height) {
             this.ctx.fillStyle = "#ff0000";
             this.ctx.fillRect(x + width - 5, y, 5, height);
@@ -72,5 +68,8 @@ export class Renderer {
     }
     clear(width: number, height: number): void {
         this.ctx.clearRect(0, 0, width, height);
+    }
+    getContext(): CanvasRenderingContext2D {
+        return this.ctx;
     }
 }
