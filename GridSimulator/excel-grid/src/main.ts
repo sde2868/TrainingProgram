@@ -4,6 +4,7 @@ import { DataStore } from "./Data/DataStore";
 import { SelectionManager } from "./Selection/SelectionManager";
 import { StatisticsManager } from "./Stats/StatisticsManager";
 import { CommandManager } from "./Commands/CommandManager";
+import { FormulaEngine } from "./Formula/FormulaEngine";
 
 const canvas = document.getElementById("gridCanvas") as HTMLCanvasElement;
 const statusCount = document.getElementById("statusCount") as HTMLSpanElement;
@@ -37,6 +38,7 @@ dataStore.setData(generateData(50000));
 const selectionManager = new SelectionManager();
 const statisticsManager = new StatisticsManager();
 const commandManager = new CommandManager();
-const grid = new Grid(canvas, ctx, dataStore, selectionManager, statisticsManager, commandManager, statusCount, statusAverage, statusSum);
+const formulaEngine = new FormulaEngine();
+const grid = new Grid(canvas, ctx, dataStore, selectionManager, statisticsManager, commandManager, statusCount, statusAverage, statusSum, formulaEngine);
 
 grid.render();
