@@ -52,6 +52,11 @@ export class Grid {
 
     private scrollX = 0;
     private scrollY = 0;
+    private autoScrollFrame = 0;
+    private autoScrollX = 0;
+    private autoScrollY = 0;
+    private readonly AUTO_SCROLL_MARGIN = 30;
+    private readonly AUTO_SCROLL_SPEED = 20;
 
     private editingRow = -1;
     private editingColumn = -1;
@@ -259,6 +264,38 @@ export class Grid {
         this.scrollY = Math.max(0, Math.min(this.scrollY, maxScrollY));
     }
 
+    private startAutoScroll(): void {
+        if (this.autoScrollFrame) {
+            return;
+        }
+        const tick = () => {
+            if (!this.isSelecting) {
+                this.stopAutoScroll();
+                return;
+            }
+            if (this.autoScrollX !== 0 || this.autoScrollY !== 0) {
+                this.scrollX += this.autoScrollX;
+                this.scrollY += this.autoScrollY;
+                const row = this.getRowFromY(this.scrollY + this.canvas.height - this.rowHeight);
+                const column = this.getColumnFromXVirtual(this.scrollX + this.canvas.width - this.rowHeaderWidth);
+                this.selectionManager.updateSelection(row, column);
+                this.updateStatistics();
+                this.clampScroll();
+                this.requestRender();
+            }
+            this.autoScrollFrame = requestAnimationFrame(tick);
+        }
+        this.autoScrollFrame = requestAnimationFrame(tick);
+    }
+
+    private stopAutoScroll(): void {
+        if (!this.autoScrollFrame) {
+            return;
+        }
+        cancelAnimationFrame(this.autoScrollFrame);
+        this.autoScrollFrame = 0;
+    }
+
     private handleWheel(event: WheelEvent): void {
         event.preventDefault();
         this.scrollX += event.deltaX;
@@ -351,6 +388,30 @@ export class Grid {
             this.requestRender();
             return;
         }
+        if (this.isSelecting) {
+            const width = this.canvas.width;
+            const height = this.canvas.height;
+            this.autoScrollX = 0;
+            this.autoScrollY = 0;
+            if (mouse.x > width - this.AUTO_SCROLL_MARGIN) {
+                this.autoScrollX = this.AUTO_SCROLL_SPEED;
+            }
+            else if (mouse.x < this.rowHeaderWidth + this.AUTO_SCROLL_MARGIN) {
+                this.autoScrollX = -this.AUTO_SCROLL_SPEED;
+            }
+            if (mouse.y > height - this.AUTO_SCROLL_MARGIN) {
+                this.autoScrollY = this.AUTO_SCROLL_SPEED;
+            }
+            else if (mouse.y < this.rowHeight + this.AUTO_SCROLL_MARGIN) {
+                this.autoScrollY = -this.AUTO_SCROLL_SPEED;
+            }
+            if (this.autoScrollX !== 0 || this.autoScrollY !== 0) {
+                this.startAutoScroll();
+            }
+            else {
+                this.stopAutoScroll();
+            }
+        }
         if (!this.isSelecting) {
             return;
         }
@@ -363,6 +424,7 @@ export class Grid {
     }
 
     private handleMouseUp(): void {
+        this.stopAutoScroll();
         if (this.isResizingColumn) {
             const newWidth = this.getColumnWidth(this.resizingColumn);
             const command = new ResizeColumnCommand(this.columnWidths, this.resizingColumn, this.resizeStartWidth, newWidth);
