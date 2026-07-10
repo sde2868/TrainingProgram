@@ -1,4 +1,6 @@
 import { DataStore } from "../Data/DataStore";
+import type { ColumnModel } from "../Models/Column";
+import type { RowModel } from "../Models/Row";
 import { SelectionManager } from "../Selection/SelectionManager";
 
 export interface Statistics {
@@ -10,13 +12,13 @@ export interface Statistics {
 }
 
 export class StatisticsManager {
-    calculateSelection(dataStore: DataStore, selectionManager: SelectionManager): Statistics {
-        const bounds = selectionManager.getBounds(dataStore.getRowCount(), dataStore.getColumnCount());
+    calculateSelection(dataStore: DataStore, selectionManager: SelectionManager, rowModel: RowModel, columnModel: ColumnModel): Statistics {
+        const bounds = selectionManager.getBounds(rowModel.getTotalRows(), columnModel.getTotalColumns());
         if (!bounds) {
             return this.getEmptyStatistics();
         }
         const { minRow, maxRow, minColumn, maxColumn } = bounds;
-        
+
         let count = 0;
         let min = Infinity;
         let max = -Infinity;
@@ -25,16 +27,16 @@ export class StatisticsManager {
         for (let row = minRow; row <= maxRow; row++) {
             for (let col = minColumn; col <= maxColumn; col++) {
                 const value = dataStore.getCell(row, col);
-                if (typeof value !== "number") {
+                const numericValue = Number(value);
+                if (value === "" || value === null || value === undefined || Number.isNaN(numericValue)) {
                     continue;
                 }
                 count++;
-                min = Math.min(min, value);
-                max = Math.max(max, value);
-                sum += value;
+                min = Math.min(min, numericValue);
+                max = Math.max(max, numericValue);
+                sum += numericValue;
             }
         }
-
         return {
             count,
             min: count > 0 ? min : 0,
