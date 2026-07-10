@@ -51,6 +51,8 @@ export class Grid {
         statusCount: HTMLSpanElement,
         statusAverage: HTMLSpanElement,
         statusSum: HTMLSpanElement,
+        statusMin: HTMLSpanElement,
+        statusMax: HTMLSpanElement,
         formulaEngine: FormulaEngine
     ) {
         this.canvas = canvas;
@@ -68,7 +70,7 @@ export class Grid {
             }
         );
         this.resizeManager = new ResizeManager(this.rowModel, this.columnModel);
-        this.statusBarManager = new StatusBarManager(statusCount, statusAverage, statusSum, statisticsManager, dataStore, selectionManager);
+        this.statusBarManager = new StatusBarManager(statusCount, statusAverage, statusSum, statusMin, statusMax, statisticsManager, dataStore, selectionManager, this.rowModel, this.columnModel);
         this.rowSizingManager = new RowSizingManager(this.rowModel, this.dataStore, this.columnModel, ctx);
         this.inputManager = new InputManager(this.canvas, this.rowModel, this.columnModel, this.scrollManager, this.resizeManager,
             {

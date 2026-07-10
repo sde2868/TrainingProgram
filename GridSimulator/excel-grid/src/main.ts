@@ -10,6 +10,8 @@ const canvas = document.getElementById("gridCanvas") as HTMLCanvasElement;
 const statusCount = document.getElementById("statusCount") as HTMLSpanElement;
 const statusAverage = document.getElementById("statusAverage") as HTMLSpanElement;
 const statusSum = document.getElementById("statusSum") as HTMLSpanElement;
+const statusMin = document.getElementById("statusMin") as HTMLSpanElement;
+const statusMax = document.getElementById("statusMax") as HTMLSpanElement;
 const ctx = canvas.getContext("2d");
 if (!ctx) {
   throw new Error("Canvas context not found");
@@ -39,6 +41,6 @@ const selectionManager = new SelectionManager();
 const statisticsManager = new StatisticsManager();
 const commandManager = new CommandManager();
 const formulaEngine = new FormulaEngine();
-const grid = new Grid(canvas, ctx, dataStore, selectionManager, statisticsManager, commandManager, statusCount, statusAverage, statusSum, formulaEngine);
+const grid = new Grid(canvas, ctx, dataStore, selectionManager, statisticsManager, commandManager, statusCount, statusAverage, statusSum, statusMin, statusMax, formulaEngine);
 
 grid.render();
