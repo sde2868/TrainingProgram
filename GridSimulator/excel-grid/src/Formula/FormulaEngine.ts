@@ -266,7 +266,7 @@ export class FormulaEngine {
         if (left === "#CIRC!" || right === "#CIRC!") {
             return "#CIRC!";
         }
-        if (left === "#REF!" || right === "#REF") {
+        if (left === "#REF!" || right === "#REF!") {
             return "#REF!";
         }
         const leftNumber = Number(left || 0);

@@ -21,7 +21,7 @@ namespace TraineeManagement.Services
                 {
                     _context.LearningTasks.Add(new LearningTask
                     {
-                        Id = 1,
+                        // Id = 1,
                         Title = "Zeus",
                         Description = "Learning",
                         ExpectedTechStack = ["C#", "Dotnet"],
@@ -130,7 +130,7 @@ namespace TraineeManagement.Services
                 _logger.LogInformation($"CreateLearningTask: creating new learning task.");
                 LearningTask learningTask = new LearningTask
                 {
-                    Id = _context.LearningTasks.ToArray().Length == 0 ? 1 : _context.LearningTasks.ToArray().Length + 1,
+                    // Id = _context.LearningTasks.ToArray().Length == 0 ? 1 : _context.LearningTasks.ToArray().Length + 1,
                     Title = dto.Title,
                     Description = dto.Description,
                     ExpectedTechStack = dto.ExpectedTechStack,

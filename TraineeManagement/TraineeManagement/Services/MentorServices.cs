@@ -20,7 +20,7 @@ namespace TraineeManagement.Services
                 {
                     _context.Mentors.Add(new Mentor
                     {
-                        Id = 1,
+                        // Id = 1,
                         FirstName = "Zeus",
                         LastName = "Learning",
                         Email = "mentor1@zeuslearning.com",
@@ -130,7 +130,7 @@ namespace TraineeManagement.Services
                 _logger.LogInformation($"CreateMentor: creating mentor.");
                 Mentor mentor = new Mentor
                 {
-                    Id = _context.Mentors.ToArray().Length == 0 ? 1 : _context.Mentors.ToArray().Length + 1,
+                    // Id = _context.Mentors.ToArray().Length == 0 ? 1 : _context.Mentors.ToArray().Length + 1,
                     FirstName = dto.FirstName,
                     LastName = dto.LastName,
                     Email = dto.Email,

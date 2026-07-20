@@ -143,7 +143,7 @@ namespace TraineeManagement.Services
                 _logger.LogInformation($"CreateUser: creating new user.");
                 User user = new User
                 {
-                    Id = _context.Users.ToArray().Length == 0 ? 1 : _context.Users.ToArray().Length + 1,
+                    // Id = _context.Users.ToArray().Length == 0 ? 1 : _context.Users.ToArray().Length + 1,
                     UserName = dto.UserName,
                     Email = dto.Email,
                     Password = BCrypt.Net.BCrypt.HashPassword(dto.Password),

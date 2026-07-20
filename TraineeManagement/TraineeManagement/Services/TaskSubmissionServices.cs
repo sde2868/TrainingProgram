@@ -153,7 +153,7 @@ namespace TraineeManagement.Services
 
                 TaskSubmission taskSubmission = new TaskSubmission
                 {
-                    Id = _context.TaskSubmissions.ToArray().Length == 0 ? 1 : _context.TaskSubmissions.ToArray().Length + 1,
+                    // Id = _context.TaskSubmissions.ToArray().Length == 0 ? 1 : _context.TaskSubmissions.ToArray().Length + 1,
                     TaskAssignmentId = dto.TaskAssignmentId,
                     Status = dto.Status,
                     SubmittedDate = dto.SubmittedDate,

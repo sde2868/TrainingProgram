@@ -160,7 +160,7 @@ namespace TraineeManagement.Services
 
                 TaskAssignment taskAssignment = new TaskAssignment
                 {
-                    Id = _context.TaskAssignments.ToArray().Length == 0 ? 1 : _context.TaskAssignments.ToArray().Length + 1,
+                    // Id = _context.TaskAssignments.ToArray().Length == 0 ? 1 : _context.TaskAssignments.ToArray().Length + 1,
                     TraineeId = dto.TraineeId,
                     MentorId = dto.MentorId,
                     LearningTaskId = dto.LearningTaskId,
