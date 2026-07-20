@@ -140,7 +140,7 @@ namespace TraineeManagement.Services
 
                 Review review = new Review
                 {
-                    Id = _context.Reviews.ToArray().Length == 0 ? 1 : _context.Reviews.ToArray().Length + 1,
+                    // Id = _context.Reviews.ToArray().Length == 0 ? 1 : _context.Reviews.ToArray().Length + 1,
                     TaskSubmissionId = dto.TaskSubmissionId,
                     MentorId = dto.MentorId,
                     Feedback = dto.Feedback,

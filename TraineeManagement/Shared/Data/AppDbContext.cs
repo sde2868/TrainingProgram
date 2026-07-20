@@ -37,7 +37,7 @@ namespace TraineeManagement.Data
             // Seed Admin user
             modelBuilder.Entity<User>().HasData(new User
             {
-                Id = 1,
+                // Id = 1,
                 UserName = "Admin_Zeus_Learning",
                 Email = "admin@zeuslearning.com",
                 Password = BCrypt.Net.BCrypt.HashPassword("Admin@123"),

@@ -24,7 +24,7 @@ namespace TraineeManagement.Services
                 {
                     _context.Trainees.Add(new Trainee
                     {
-                        id = 1,
+                        // id = 1,
                         FirstName = "Zeus",
                         LastName = "Learning",
                         Email = "zeuslearning@email.com",
@@ -147,7 +147,7 @@ namespace TraineeManagement.Services
                 _logger.LogInformation("CreateTrainee: creating new trainee.");
                 Trainee trainee = new Trainee
                 {
-                    id = _context.Trainees.ToArray().Length == 0 ? 1 : _context.Trainees.ToArray().Length + 1,
+                    // id = _context.Trainees.ToArray().Length == 0 ? 1 : _context.Trainees.ToArray().Length + 1,
                     FirstName = dto.FirstName,
                     LastName = dto.LastName,
                     Email = dto.Email,
