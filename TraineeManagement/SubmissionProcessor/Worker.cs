@@ -39,20 +39,25 @@ public class Worker : BackgroundService
             VirtualHost = _config["RabbitMQ:VirtualHost"] ?? "/"
         };
 
-        IConnection connection = null;
         while (!stoppingToken.IsCancellationRequested)
         {
             try
             {
-                connection = await factory.CreateConnectionAsync();
+                _connection = await factory.CreateConnectionAsync(stoppingToken);
                 break;
             }
-            catch
+            catch (Exception ex)
             {
-                _logger.LogWarning("RabbitMQ unavailable. Retrying in 5 seconds...");
+                _logger.LogWarning(ex, "RabbitMQ unavailable. Retrying in 5 seconds...");
                 await Task.Delay(TimeSpan.FromSeconds(5), stoppingToken);
             }
         }
+        if (_connection == null)
+        {
+            _logger.LogWarning("RabbitMQ connection was not created because the worker is stopping.");
+            return;
+        }
+
         _channel = await _connection.CreateChannelAsync(cancellationToken: stoppingToken);
 
         // var queue = _config["RabbitMQ:QueueName"];
