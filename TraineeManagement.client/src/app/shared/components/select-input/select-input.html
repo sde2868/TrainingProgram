@@ -1,0 +1,26 @@
+<div class="field">
+  <label [for]="id">{{ label }}</label>
+
+  <select
+    [id]="id"
+    [name]="name"
+    [ngModel]="value"
+    (ngModelChange)="onValueChange($event)"
+    [attr.aria-invalid]="error ? true : null"
+    [attr.aria-describedby]="error ? id + '-error' : null"
+  >
+    <option value="">{{ placeholder }}</option>
+
+    @for (option of options; track option.value) {
+      <option [value]="option.value">
+        {{ option.label }}
+      </option>
+    }
+  </select>
+
+  @if (error) {
+    <div class="field-error" [id]="id + '-error'">
+      {{ error }}
+    </div>
+  }
+</div>

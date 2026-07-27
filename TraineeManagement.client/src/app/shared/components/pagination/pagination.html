@@ -1,0 +1,19 @@
+<nav class="pagination" aria-label="Pagination">
+  <button
+    type="button"
+    (click)="previous()"
+    [disabled]="pageNumber <= 1"
+  >
+    Previous
+  </button>
+
+  <span>Page {{ pageNumber }} of {{ totalPages }}</span>
+
+  <button
+    type="button"
+    (click)="next()"
+    [disabled]="pageNumber >= totalPages"
+  >
+    Next
+  </button>
+</nav>

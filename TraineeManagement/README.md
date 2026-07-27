@@ -249,14 +249,14 @@ Each controller exposes REST endpoints for CRUD operations:
 | Controller | Endpoints | Purpose |
 |-----------|-----------|---------|
 | **UserController** | `/api/user/*` | User authentication, CRUD, role management |
-| **TraineeController** | `/api/trainee/*` | Trainee registration and management |
-| **MentorController** | `/api/mentor/*` | Mentor creation and management |
-| **LearningTaskController** | `/api/learning-task/*` | Learning task CRUD and publishing |
-| **TaskAssignmentController** | `/api/task-assignment/*` | Assign tasks to trainees |
-| **TaskSubmissionController** | `/api/task-submission/*` | Trainee submissions and retrieval |
+| **TraineeController** | `/api/trainees/*` | Trainee registration and management |
+| **MentorController** | `/api/mentors/*` | Mentor creation and management |
+| **LearningTaskController** | `/api/learning-tasks/*` | Learning task CRUD and publishing |
+| **TaskAssignmentController** | `/api/task-assignments/*` | Assign tasks to trainees |
+| **TaskSubmissionController** | `/api/submissions/*` | Trainee submissions and retrieval |
 | **ProcessingJobsController** | `/api/processing-jobs/*` | Processing job status and details |
-| **ReviewController** | `/api/review/*` | Mentor reviews on submissions |
-| **SubmissionFileController** | `/api/submission-file/*` | File upload and download |
+| **ReviewController** | `/api/reviews/*` | Mentor reviews on submissions |
+| **SubmissionFileController** | `/api/submission-files/*` | File upload and download |
 
 ### 2. Models (Data Layer)
 
@@ -418,51 +418,51 @@ SubmissionProcessingRequested
 
 ### Authentication & Users
 ```
-POST   /api/user/login              Login with credentials, receive JWT token
-POST   /api/user/register           Create new user account
-GET    /api/user/{id}               Get user by ID (requires JWT)
-PUT    /api/user/{id}               Update user details
-DELETE /api/user/{id}               Delete user account
+POST   /api/auth/login              Login with credentials, receive JWT token
+POST   /api/users/register           Create new user account
+GET    /api/users/{id}               Get user by ID (requires JWT)
+PUT    /api/users/{id}               Update user details
+DELETE /api/users/{id}               Delete user account
 ```
 
 ### Trainees
 ```
-POST   /api/trainee                 Create new trainee
-GET    /api/trainee                 List all trainees
-GET    /api/trainee/{id}            Get trainee details
-PUT    /api/trainee/{id}            Update trainee information
-DELETE /api/trainee/{id}            Delete trainee
-GET    /api/trainee/{id}/assignments Get trainee's task assignments
-GET    /api/trainee/{id}/submissions Get trainee's submissions
+POST   /api/trainees                 Create new trainee
+GET    /api/trainees                 List all trainees
+GET    /api/trainees/{id}            Get trainee details
+PUT    /api/trainees/{id}            Update trainee information
+DELETE /api/trainees/{id}            Delete trainee
+GET    /api/trainees/{id}/assignments Get trainee's task assignments
+GET    /api/trainees/{id}/submissions Get trainee's submissions
 ```
 
 ### Learning Tasks
 ```
-POST   /api/learning-task           Create new learning task (Draft)
-GET    /api/learning-task           List all tasks
-GET    /api/learning-task/{id}      Get task details
-PUT    /api/learning-task/{id}      Update task
-DELETE /api/learning-task/{id}      Delete task
-PATCH  /api/learning-task/{id}/publish Publish task for assignments
+POST   /api/learning-tasks           Create new learning task (Draft)
+GET    /api/learning-tasks           List all tasks
+GET    /api/learning-tasks/{id}      Get task details
+PUT    /api/learning-tasks/{id}      Update task
+DELETE /api/learning-tasks/{id}      Delete task
+PATCH  /api/learning-tasks/{id}/publish Publish task for assignments
 ```
 
 ### Task Assignments
 ```
-POST   /api/task-assignment         Assign task to trainee
-GET    /api/task-assignment         List all assignments
-GET    /api/task-assignment/{id}    Get assignment details
-PUT    /api/task-assignment/{id}    Update assignment (deadline, etc.)
-DELETE /api/task-assignment/{id}    Remove assignment
+POST   /api/task-assignments         Assign task to trainee
+GET    /api/task-assignments         List all assignments
+GET    /api/task-assignments/{id}    Get assignment details
+PUT    /api/task-assignments/{id}    Update assignment (deadline, etc.)
+DELETE /api/task-assignments/{id}    Remove assignment
 ```
 
 ### Task Submissions
 ```
-POST   /api/task-submission         Create/submit task with files
-GET    /api/task-submission         List submissions (with filtering)
-GET    /api/task-submission/{id}    Get submission details
-PUT    /api/task-submission/{id}    Resubmit task with new files
-GET    /api/task-submission/{id}/files Get submitted files
-DELETE /api/task-submission/{id}    Delete submission
+POST   /api/submissions         Create/submit task with files
+GET    /api/submissions         List submissions (with filtering)
+GET    /api/submissions/{id}    Get submission details
+PUT    /api/submissions/{id}    Resubmit task with new files
+GET    /api/submissions/{id}/files Get submitted files
+DELETE /api/submissions/{id}    Delete submission
 ```
 
 ### Processing Jobs
@@ -472,19 +472,19 @@ GET    /api/processing-jobs/{id}    Get processing job details and status
 
 ### Reviews
 ```
-POST   /api/review                  Create review on submission
-GET    /api/review                  List all reviews
-GET    /api/review/{id}             Get review details
-PUT    /api/review/{id}             Update review
-DELETE /api/review/{id}             Delete review
-GET    /api/task-submission/{id}/reviews Get all reviews for submission
+POST   /api/reviews                  Create review on submission
+GET    /api/reviews                  List all reviews
+GET    /api/reviews/{id}             Get review details
+PUT    /api/reviews/{id}             Update review
+DELETE /api/reviews/{id}             Delete review
+GET    /api/submissions/{id}/reviews Get all reviews for submission
 ```
 
 ### File Management
 ```
-GET    /api/submission-file/{id}    Download file
-DELETE /api/submission-file/{id}    Delete file
-GET    /api/submission-file/submission/{submissionId} List files in submission
+GET    /api/submission-files/{id}    Download file
+DELETE /api/submission-files/{id}    Delete file
+GET    /api/submission-files/submission/{submissionId} List files in submission
 ```
 
 ### Health Checks
@@ -887,7 +887,7 @@ The compose setup starts:
 
 1. **Login**: Get JWT token
    ```
-   POST /api/user/login
+   POST /api/auth/login
    {
      "username": "Admin_Zeus_Learning",
      "password": "Admin@123"
@@ -896,7 +896,7 @@ The compose setup starts:
 
 2. **Create Trainee**: Add trainee using token
    ```
-   POST /api/trainee
+   POST /api/trainees
    Authorization: Bearer <token>
    ```
 
@@ -906,7 +906,7 @@ The compose setup starts:
 
 5. **Submit Task**: Upload files
    ```
-   POST /api/task-submission
+   POST /api/submissions
    - Files uploaded
    - SubmissionProcessingRequested published to queue
    ```
