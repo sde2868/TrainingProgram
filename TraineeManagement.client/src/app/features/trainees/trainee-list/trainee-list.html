@@ -1,4 +1,84 @@
-<section>
-  <h2>Trainees</h2>
-  <p>Trainee list, search, filters, and pagination will be built here.</p>
+<section class="page">
+  <div class="page-header">
+    <div>
+      <h2>Trainees</h2>
+      <p>Search, filter, and manage trainees.</p>
+    </div>
+
+    <a routerLink="/trainees/add" class="primary-link">Add Trainee</a>
+  </div>
+
+  <div class="filters">
+    <app-text-input id="search" name="search" label="Search" type="search" placeholder="Search by name or email"
+      [value]="search()" (valueChange)="onSearchChanged($event)"></app-text-input>
+
+    <app-select-input id="status" name="status" label="Status" placeholder="All statuses" [options]="statusOptions"
+      [value]="status()" (valueChange)="onStatusChanged($event)"></app-select-input>
+
+    <app-select-input id="pageSize" name="pageSize" label="Page size" placeholder="Page size"
+      [options]="pageSizeOptions" [value]="pageSize()" (valueChange)="onPageSizeChanged($event)"></app-select-input>
+
+    <div class="filter-action">
+      <app-button label="Apply" variant="primary" (clicked)="onSearch()"></app-button>
+    </div>
+  </div>
+  <!-- 
+  <p style="background: yellow; padding: 8px;">
+    isLoading: {{ isLoading() }} | trainees: {{ trainees().length }} | error: {{ errorMessage() }}
+  </p> -->
+
+  @if (isLoading()) {
+  <app-loader message="Loading trainees..."></app-loader>
+  }
+
+  <app-error-message [message]="errorMessage()"></app-error-message>
+
+  @if (!isLoading() && !errorMessage() && trainees().length === 0) {
+  <div class="empty-state">
+    No trainees found.
+  </div>
+  }
+
+  @if (!isLoading() && !errorMessage() && trainees().length > 0) {
+  <div class="list-toolbar">
+    <div class="record-summary">
+      Showing {{ trainees().length }} of {{ totalRecords() }} trainee(s)
+    </div>
+    <app-pagination [pageNumber]="pageNumber()" [pageSize]="pageSize()" [totalRecords]="totalRecords()"
+      (pageChanged)="onPageChanged($event)"></app-pagination>
+  </div>
+  <div class="table-wrapper">
+    <table>
+      <thead>
+        <tr>
+          <th scope="col">Name</th>
+          <th scope="col">Email</th>
+          <th scope="col">Tech Stack</th>
+          <th scope="col">Status</th>
+          <th scope="col">Actions</th>
+        </tr>
+      </thead>
+
+      <tbody>
+        @for (trainee of trainees(); track trainee.id) {
+        <tr>
+          <td>{{ trainee.firstName }} {{ trainee.lastName }}</td>
+          <td>{{ trainee.email }}</td>
+          <td>{{ trainee.techStack?.join(', ') || '-' }}</td>
+          <td>
+            <app-status-badge [status]="trainee.status"></app-status-badge>
+          </td>
+          <td>
+            <div class="actions">
+              <a [routerLink]="['/trainees', trainee.id, 'edit']">Edit</a>
+
+              <app-button label="Delete" variant="danger" (clicked)="deleteTrainee(trainee.id)"></app-button>
+            </div>
+          </td>
+        </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+  }
 </section>

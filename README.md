@@ -22,15 +22,11 @@
   - API endpoints for trainee management workflows.
 
 ### **TraineeManagement.client/**
-- **Purpose:** Angular + TypeScript frontend for the TraineeManagement. It consumes the ASP.NET Core backend APIs from `TraineeManagement/` and provides protected UI screens for managing trainees, mentors, learning tasks, assignments, submissions, reviews, and related workflow operations.
+- **Purpose:** Angular + TypeScript frontend for the TraineeManagement.
 - **Highlights:**
-  - Modern Angular project using standalone configuration with `app.config.ts` and `app.routes.ts`.
+  - Make front end for `/api/auth/login` and protected routes `/api/trainees`, `/api/mentors`, `/api/learning-tasks`, `/api/task-assignments`, `/api/submissions`, and `/api/reviews` using JWT tokens, headers, guards and interceptors.
   - Feature-based folder structure with `core/`, `shared/`, `features/`, and `models/`.
-  - Planned protected routing for Login, Dashboard, Trainees, Mentors, Learning Tasks, Assignments, Submissions, and Reviews as required by the Angular training task.
-  - Reusable shared components planned for buttons, inputs, select controls, data tables, loaders, error messages, pagination, and status badges.
-  - API integration planned with typed Angular services for backend routes such as `/api/auth/login`, `/api/trainees`, `/api/mentors`, `/api/learning-tasks`, `/api/task-assignments`, `/api/submissions`, and `/api/reviews`.
-  - Authentication flow planned with JWT login, route guard, HTTP interceptor, logout, and protected API access.
-  - Focus areas include strict TypeScript usage, reactive forms, loading/error/empty states, accessibility, basic tests, screenshots, and README documentation.
+  - Make reusable shared components like buttons, inputs, select controls, data tables, loaders, error messages, pagination, and status badges.
  
 ### **FootballMatchSimulator/**
 - **Purpose:** OOP and SOLID principles practice task in typescript simulating events and match commentary with score.

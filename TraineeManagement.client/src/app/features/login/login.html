@@ -1,0 +1,40 @@
+<section class="login-page">
+  <form class="login-card" (ngSubmit)="onSubmit()">
+    <div class="login-header">
+      <h1>Trainee Management</h1>
+      <p>Login to continue</p>
+    </div>
+
+    <app-error-message [message]="errorMessage"></app-error-message>
+
+    <app-text-input
+      id="username"
+      name="username"
+      label="Username"
+      type="text"
+      placeholder="Enter username"
+      autocomplete="username"
+      [required]="true"
+      [(value)]="form.username"
+    ></app-text-input>
+
+    <app-text-input
+      id="password"
+      name="password"
+      label="Password"
+      type="password"
+      placeholder="Enter password"
+      autocomplete="current-password"
+      [required]="true"
+      [(value)]="form.password"
+    ></app-text-input>
+
+    <app-button
+      type="submit"
+      variant="primary"
+      [label]="isLoading ? 'Logging in...' : 'Login'"
+      [disabled]="isLoading"
+      [fullWidth]="true"
+    ></app-button>
+  </form>
+</section>

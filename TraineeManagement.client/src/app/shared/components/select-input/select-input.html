@@ -4,8 +4,10 @@
   <select
     [id]="id"
     [name]="name"
-    [ngModel]="value"
-    (ngModelChange)="onValueChange($event)"
+    [value]="value"
+    [disabled]="disabled"
+    (change)="onSelectChange($event)"
+    (blur)="onBlur()"
     [attr.aria-invalid]="error ? true : null"
     [attr.aria-describedby]="error ? id + '-error' : null"
   >
