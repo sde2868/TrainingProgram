@@ -71,22 +71,22 @@ public class SubmissionProcessingService : ISubmissionProcessingService
             _logger.LogWarning("Message received without matching ProcessingJob. MessageId: {MessageId}", message.MessageId);
             return;
         }
-        // if (job.Status == ProcessingJobStatus.Completed)
-        // {
-        //     _logger.LogWarning("Message {MessageId} already completed.", message.MessageId);
-        //     return;
-        // }
+        if (job.Status == ProcessingJobStatus.Completed)
+        {
+            _logger.LogWarning("Message {MessageId} already completed.", message.MessageId);
+            return;
+        }
 
-        // var alreadyCompletedForFile = await _context.ProcessingJobs.AnyAsync(
-        //             x => x.SubmissionFileId == message.SubmissionFileId &&
-        //                  x.Status == ProcessingJobStatus.Completed &&
-        //                  x.MessageId != message.MessageId,
-        //                  cancellationToken);
-        // if (alreadyCompletedForFile)
-        // {
-        //     _logger.LogWarning("File already processed. FileId {FileId}", message.SubmissionFileId);
-        //     return;
-        // }
+        var alreadyCompletedForFile = await _context.ProcessingJobs.AnyAsync(
+                    x => x.SubmissionFileId == message.SubmissionFileId &&
+                         x.Status == ProcessingJobStatus.Completed &&
+                         x.MessageId != message.MessageId,
+                         cancellationToken);
+        if (alreadyCompletedForFile)
+        {
+            _logger.LogWarning("File already processed. FileId {FileId}", message.SubmissionFileId);
+            return;
+        }
 
         try
         {
@@ -101,11 +101,6 @@ public class SubmissionProcessingService : ISubmissionProcessingService
             await _context.SaveChangesAsync(cancellationToken);
 
             var file = await _context.SubmissionFiles.FirstOrDefaultAsync(x => x.Id == message.SubmissionFileId, cancellationToken);
-            if (file.OriginalFileName.Contains("fail"))
-            {
-                throw new InvalidOperationException(
-                    "Intentional test failure");
-            }
             if (file == null)
             {
                 throw new FileNotFoundException("Submission file not found.");

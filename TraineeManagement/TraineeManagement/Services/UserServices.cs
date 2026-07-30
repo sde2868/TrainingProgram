@@ -94,7 +94,7 @@ namespace TraineeManagement.Services
                         UserName = u.UserName,
                         Email = u.Email,
                         Role = u.Role,
-                        Password = u.Password
+                        // Password = u.Password
                     })
                     .ToListAsync();
 
