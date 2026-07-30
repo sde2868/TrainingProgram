@@ -4,6 +4,7 @@ namespace TraineeManagement.Models
 {
     public class TraineeDTO
     {
+        public int id { get; set; }
         [Required(ErrorMessage = "FirstName is required!")]
         [StringLength(50, MinimumLength = 3)]
         [RegularExpression(@"^[a-zA-Z]+$", ErrorMessage = "FirstName should contain only letters!")]

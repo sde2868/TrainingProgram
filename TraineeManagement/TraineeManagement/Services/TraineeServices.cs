@@ -80,7 +80,7 @@ namespace TraineeManagement.Services
                     .Take(pageSize)
                     .Select(t => new TraineeDTO
                     {
-                        // id = t.id,
+                        id = t.id,
                         FirstName = t.FirstName,
                         LastName = t.LastName,
                         Email = t.Email,
@@ -258,6 +258,7 @@ namespace TraineeManagement.Services
                 _logger.LogInformation($"ReturnTraineeDTO: converting trainee with id {tr.id} to DTO.");
                 TraineeDTO dto = new()
                 {
+                    id = tr.id,
                     FirstName = tr.FirstName,
                     LastName = tr.LastName,
                     Email = tr.Email,
