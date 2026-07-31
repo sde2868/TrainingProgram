@@ -8,7 +8,7 @@
     [placeholder]="placeholder"
     [autocomplete]="autocomplete"
     [required]="required"
-    [value]="value"
+    [value]="displayValue"
     [disabled]="disabled"
     (input)="onInput($event)"
     (blur)="onBlur()"
@@ -16,9 +16,11 @@
     [attr.aria-describedby]="error ? id + '-error' : null"
   />
 
-  @if (error) {
-    <div class="field-error" [id]="id + '-error'">
-      {{ error }}
-    </div>
-  }
+  <div
+    class="field-error"
+    [class.hidden]="!error"
+    [id]="id + '-error'"
+  >
+    {{ error || 'No error' }}
+  </div>
 </div>

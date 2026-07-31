@@ -1,0 +1,86 @@
+<section class="page">
+  <div class="page-header">
+    <div>
+      <h2>{{ isEditMode() ? 'Edit Trainee' : 'Add Trainee' }}</h2>
+      <p>
+        {{ isEditMode() ? 'Update trainee details.' : 'Create a new trainee.' }}
+      </p>
+    </div>
+
+    <a routerLink="/trainees" class="secondary-link">Back to Trainees</a>
+  </div>
+
+  @if (isLoading()) {
+    <app-loader message="Loading trainee details..."></app-loader>
+  }
+
+  <app-error-message [message]="pageError()"></app-error-message>
+
+  @if (!isLoading()) {
+    <form class="form-card" [formGroup]="form" (ngSubmit)="submit()">
+      <div class="form-grid">
+        <app-text-input
+          id="firstName"
+          name="firstName"
+          label="First Name"
+          placeholder="Enter first name"
+          formControlName="firstName"
+          [required]="true"
+          [error]="getControlError('firstName')"
+        ></app-text-input>
+
+        <app-text-input
+          id="lastName"
+          name="lastName"
+          label="Last Name"
+          placeholder="Enter last name"
+          formControlName="lastName"
+          [required]="true"
+          [error]="getControlError('lastName')"
+        ></app-text-input>
+      </div>
+
+      <app-text-input
+        id="email"
+        name="email"
+        label="Email"
+        type="email"
+        placeholder="Enter email"
+        formControlName="email"
+        [required]="true"
+        [error]="getControlError('email')"
+      ></app-text-input>
+
+      <app-text-input
+        id="techStack"
+        name="techStack"
+        label="Tech Stack"
+        placeholder="Example: Angular, TypeScript, .NET"
+        formControlName="techStack"
+        [required]="true"
+        [error]="getControlError('techStack')"
+      ></app-text-input>
+
+      <app-select-input
+        id="status"
+        name="status"
+        label="Status"
+        placeholder="Select status"
+        [options]="statusOptions"
+        formControlName="status"
+        [error]="getControlError('status')"
+      ></app-select-input>
+
+      <div class="form-actions">
+        <app-button
+          type="submit"
+          variant="primary"
+          [label]="isSaving() ? 'Saving...' : isEditMode() ? 'Update Trainee' : 'Create Trainee'"
+          [disabled]="isSaving()"
+        ></app-button>
+
+        <a routerLink="/trainees" class="cancel-link">Cancel</a>
+      </div>
+    </form>
+  }
+</section>

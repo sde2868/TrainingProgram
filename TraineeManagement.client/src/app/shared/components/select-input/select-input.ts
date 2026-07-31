@@ -1,4 +1,12 @@
-import { Component, EventEmitter, forwardRef, Input, Output } from '@angular/core';
+import {
+  ChangeDetectorRef,
+  Component,
+  EventEmitter,
+  forwardRef,
+  Input,
+  Output,
+  inject
+} from '@angular/core';
 import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
 
 export interface SelectOption {
@@ -20,6 +28,8 @@ export interface SelectOption {
   ]
 })
 export class SelectInput implements ControlValueAccessor {
+  private readonly cdr = inject(ChangeDetectorRef);
+
   @Input() id = '';
   @Input() name = '';
   @Input() label = '';
@@ -27,20 +37,29 @@ export class SelectInput implements ControlValueAccessor {
   @Input() options: SelectOption[] = [];
   @Input() error = '';
 
-  @Input() value: string | number = '';
+  @Input()
+  set value(value: string | number | null) {
+    this.displayValue = value === null || value === undefined ? '' : String(value);
+  }
 
-  @Output() valueChange = new EventEmitter<string | number>();
+  get value(): string {
+    return this.displayValue;
+  }
 
+  @Output() valueChange = new EventEmitter<string>();
+
+  displayValue = '';
   disabled = false;
 
-  private propagateChange: (value: string | number) => void = () => {};
+  private propagateChange: (value: string) => void = () => {};
   private propagateTouched: () => void = () => {};
 
   writeValue(value: string | number | null): void {
-    this.value = value ?? '';
+    this.displayValue = value === null || value === undefined ? '' : String(value);
+    this.cdr.markForCheck();
   }
 
-  registerOnChange(fn: (value: string | number) => void): void {
+  registerOnChange(fn: (value: string) => void): void {
     this.propagateChange = fn;
   }
 
@@ -50,17 +69,22 @@ export class SelectInput implements ControlValueAccessor {
 
   setDisabledState(isDisabled: boolean): void {
     this.disabled = isDisabled;
+    this.cdr.markForCheck();
   }
 
   onSelectChange(event: Event): void {
     const selectElement = event.target as HTMLSelectElement;
-    this.value = selectElement.value;
+    this.displayValue = selectElement.value;
 
-    this.propagateChange(this.value);
-    this.valueChange.emit(this.value);
+    this.propagateChange(this.displayValue);
+    this.valueChange.emit(this.displayValue);
   }
 
   onBlur(): void {
     this.propagateTouched();
+  }
+
+  isSelected(optionValue: string | number): boolean {
+    return String(optionValue) === this.displayValue;
   }
 }

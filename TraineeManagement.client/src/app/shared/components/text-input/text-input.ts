@@ -1,4 +1,12 @@
-import { Component, EventEmitter, forwardRef, Input, Output } from '@angular/core';
+import {
+  ChangeDetectorRef,
+  Component,
+  EventEmitter,
+  forwardRef,
+  Input,
+  Output,
+  inject
+} from '@angular/core';
 import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
 
 @Component({
@@ -15,6 +23,8 @@ import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
   ]
 })
 export class TextInput implements ControlValueAccessor {
+  private readonly cdr = inject(ChangeDetectorRef);
+
   @Input() id = '';
   @Input() label = '';
   @Input() name = '';
@@ -24,17 +34,26 @@ export class TextInput implements ControlValueAccessor {
   @Input() required = false;
   @Input() error = '';
 
-  @Input() value = '';
+  @Input()
+  set value(value: string | null) {
+    this.displayValue = value ?? '';
+  }
+
+  get value(): string {
+    return this.displayValue;
+  }
 
   @Output() valueChange = new EventEmitter<string>();
 
+  displayValue = '';
   disabled = false;
 
   private propagateChange: (value: string) => void = () => {};
   private propagateTouched: () => void = () => {};
 
   writeValue(value: string | null): void {
-    this.value = value ?? '';
+    this.displayValue = value ?? '';
+    this.cdr.markForCheck();
   }
 
   registerOnChange(fn: (value: string) => void): void {
@@ -47,14 +66,15 @@ export class TextInput implements ControlValueAccessor {
 
   setDisabledState(isDisabled: boolean): void {
     this.disabled = isDisabled;
+    this.cdr.markForCheck();
   }
 
   onInput(event: Event): void {
     const inputElement = event.target as HTMLInputElement;
-    this.value = inputElement.value;
+    this.displayValue = inputElement.value;
 
-    this.propagateChange(this.value);
-    this.valueChange.emit(this.value);
+    this.propagateChange(this.displayValue);
+    this.valueChange.emit(this.displayValue);
   }
 
   onBlur(): void {

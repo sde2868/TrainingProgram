@@ -12,6 +12,8 @@ import { ReviewList } from './features/reviews/review-list/review-list';
 
 import { authGuard } from './core/guards/auth-guard';
 
+import { TraineeForm } from './features/trainees/trainee-form/trainee-form';
+
 export const routes: Routes = [
   {
     path: 'login',
@@ -34,6 +36,14 @@ export const routes: Routes = [
       {
         path: 'trainees',
         component: TraineeList,
+      },
+      {
+        path: 'trainees/add',
+        component: TraineeForm,
+      },
+      {
+        path: 'trainees/:id/edit',
+        component: TraineeForm
       },
       {
         path: 'mentors',

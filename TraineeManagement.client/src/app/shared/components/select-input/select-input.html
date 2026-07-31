@@ -4,25 +4,32 @@
   <select
     [id]="id"
     [name]="name"
-    [value]="value"
+    [value]="displayValue"
     [disabled]="disabled"
     (change)="onSelectChange($event)"
     (blur)="onBlur()"
     [attr.aria-invalid]="error ? true : null"
     [attr.aria-describedby]="error ? id + '-error' : null"
   >
-    <option value="">{{ placeholder }}</option>
+    <option value="" [selected]="displayValue === ''">
+      {{ placeholder }}
+    </option>
 
     @for (option of options; track option.value) {
-      <option [value]="option.value">
+      <option
+        [value]="option.value"
+        [selected]="isSelected(option.value)"
+      >
         {{ option.label }}
       </option>
     }
   </select>
 
-  @if (error) {
-    <div class="field-error" [id]="id + '-error'">
-      {{ error }}
-    </div>
-  }
+  <div
+    class="field-error"
+    [class.hidden]="!error"
+    [id]="id + '-error'"
+  >
+    {{ error || 'No error' }}
+  </div>
 </div>

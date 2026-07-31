@@ -6,7 +6,7 @@
 .field {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 5px;
 }
 
 label {
@@ -15,8 +15,9 @@ label {
 }
 
 select {
+  width: 100%;
   height: 38px;
-  min-width: 180px;
+  box-sizing: border-box;
   border: 1px solid #d1d5db;
   border-radius: 8px;
   padding: 0 10px;
@@ -29,6 +30,13 @@ select:focus {
 }
 
 .field-error {
+  min-height: 17px;
   color: #991b1b;
-  font-size: 13px;
+  font-size: 12px;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+.field-error.hidden {
+  visibility: hidden;
 }
