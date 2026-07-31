@@ -29,7 +29,6 @@ namespace TrainingDirectory.Api.Controllers
             {
                 return NotFound();
             }
-            // await Task.Delay(10000); // for time out resilience
             return Ok(
                 new TraineeProcessingProfileResponse
                 {

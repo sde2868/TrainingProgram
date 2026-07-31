@@ -60,9 +60,6 @@ public class Worker : BackgroundService
 
         _channel = await _connection.CreateChannelAsync(cancellationToken: stoppingToken);
 
-        // var queue = _config["RabbitMQ:QueueName"];
-        // var deadLetterExchange = _config["RabbitMQ:DeadLetterExchange"];
-        // var deadLetterQueue = _config["RabbitMQ:DeadLetterQueue"];
         var queue = RabbitMqTopology.ProcessingQueue;
 
         if (string.IsNullOrWhiteSpace(queue))
@@ -70,38 +67,6 @@ public class Worker : BackgroundService
             throw new InvalidOperationException("RabbitMQ: QueueName configuration is missing.");
         }
 
-        // await _channel.ExchangeDeclareAsync(
-        //     exchange: deadLetterExchange!,
-        //     type: ExchangeType.Direct,
-        //     durable: true,
-        //     cancellationToken: stoppingToken);
-
-        // await _channel.QueueDeclareAsync(
-        //     queue: deadLetterQueue!,
-        //     durable: true,
-        //     exclusive: false,
-        //     autoDelete: false,
-        //     cancellationToken: stoppingToken);
-
-        // await _channel.QueueBindAsync(
-        //     queue: deadLetterQueue!,
-        //     exchange: deadLetterExchange!,
-        //     routingKey: queue!,
-        //     cancellationToken: stoppingToken);
-
-        // var queueArgs = new Dictionary<string, object?>
-        // {
-        //     ["x-dead-letter-exchange"] = deadLetterExchange,
-        //     ["x-dead-letter-routing-key"] = queue
-        // };
-
-        // await _channel.QueueDeclareAsync(
-        //     queue: queue,
-        //     durable: true,
-        //     exclusive: false,
-        //     autoDelete: false,
-        //     arguments: queueArgs,
-        //     cancellationToken: stoppingToken);
         await RabbitMqTopologyConfigurator.ConfigureAsync(_channel, stoppingToken);
 
         await _channel.BasicQosAsync(

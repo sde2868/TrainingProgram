@@ -19,28 +19,10 @@ namespace TraineeManagement.Services
                 _context = context;
                 _logger = logger;
                 _cache = cache;
-                // // seed data
-                // if (!_context.TaskSubmissions.Any())
-                // {
-                //     _context.TaskSubmissions.Add(new TaskSubmission
-                //     {
-                //         Id = 1,
-                //         Title = "Zeus",
-                //         Description = "Learning",
-                //         ExpectedTechStack = ["C#", "Dotnet"],
-                //         Status = TaskSubmissionStatus.Draft,
-                //         DueDate = DateTime.UtcNow,
-                //         CreatedAt = DateTime.UtcNow,
-                //         UpdatedAt = DateTime.UtcNow
-                //     });
-
-                //     _context.SaveChanges();
-                // }
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error while seeding task submission data.");
-                // throw new Exception($"Error while seeding task submission data.", ex);
                 throw;
             }
         }
@@ -98,7 +80,6 @@ namespace TraineeManagement.Services
             catch (Exception ex)
             {
                 _logger.LogError(ex, $"GetAllTaskSubmissions: error fetching task submissions with search {search}.");
-                // throw new Exception($"Error while deleting task submissions.", ex);
                 throw;
             }
         }
@@ -118,7 +99,6 @@ namespace TraineeManagement.Services
 
                 TaskSubmission? taskSubmission = await _context.TaskSubmissions
                     .AsNoTracking()
-                    // .Include(taskSubmission => taskSubmission.Reviews)
                     .FirstOrDefaultAsync(t => t.Id == id);
                 if (taskSubmission == null)
                 {
@@ -132,7 +112,6 @@ namespace TraineeManagement.Services
             catch (Exception ex)
             {
                 _logger.LogError(ex, $"GetTaskSubmissionById: error while fetching task submission with id {id}.");
-                // throw new Exception($"Error while feetching task submission with id {id}.", ex);
                 throw;
             }
 
@@ -153,7 +132,6 @@ namespace TraineeManagement.Services
 
                 TaskSubmission taskSubmission = new TaskSubmission
                 {
-                    // Id = _context.TaskSubmissions.ToArray().Length == 0 ? 1 : _context.TaskSubmissions.ToArray().Length + 1,
                     TaskAssignmentId = dto.TaskAssignmentId,
                     Status = dto.Status,
                     SubmittedDate = dto.SubmittedDate,
@@ -172,7 +150,6 @@ namespace TraineeManagement.Services
             catch (Exception ex)
             {
                 _logger.LogError(ex, "CreateTaskSubmission: error while creating task submission.");
-                // throw new Exception($"Error while creating task submission.", ex);
                 throw;
             }
 
@@ -196,7 +173,6 @@ namespace TraineeManagement.Services
             catch (Exception ex)
             {
                 _logger.LogError($"ReturnTaskSubmissionDTO: error while converting task submission with id {t.Id} to dto.");
-                // throw new Exception("Error while converting task submission to DTO.", ex);
                 throw;
             }
         }

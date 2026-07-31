@@ -19,28 +19,10 @@ namespace TraineeManagement.Services
                 _context = context;
                 _logger = logger;
                 _cache = cache;
-                // // seed data
-                // if (!_context.TaskAssignments.Any())
-                // {
-                //     _context.TaskAssignments.Add(new TaskAssignment
-                //     {
-                //         Id = 1,
-                //         Title = "Zeus",
-                //         Description = "Learning",
-                //         ExpectedTechStack = ["C#", "Dotnet"],
-                //         Status = TaskAssignmentStatus.Draft,
-                //         DueDate = DateTime.UtcNow,
-                //         CreatedAt = DateTime.UtcNow,
-                //         UpdatedAt = DateTime.UtcNow
-                //     });
-
-                //     _context.SaveChanges();
-                // }
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error while seeding task assignment data.");
-                // throw new Exception($"Error while seeding task assignment data.", ex);
                 throw;
             }
         }
@@ -99,7 +81,6 @@ namespace TraineeManagement.Services
             catch (Exception ex)
             {
                 _logger.LogError(ex, $"GetAllTaskAssignments: error fetching task assignments for search {search}.");
-                // throw new Exception($"Error while deleting task assignments.", ex);
                 throw;
             }
         }
@@ -133,7 +114,6 @@ namespace TraineeManagement.Services
             catch (Exception ex)
             {
                 _logger.LogError(ex, $"GetTaskAssignemntById: error while fetching task assignment with id {id}.");
-                // throw new Exception($"Error while feetching task assignment with id {id}.", ex);
                 throw;
             }
 
@@ -160,7 +140,6 @@ namespace TraineeManagement.Services
 
                 TaskAssignment taskAssignment = new TaskAssignment
                 {
-                    // Id = _context.TaskAssignments.ToArray().Length == 0 ? 1 : _context.TaskAssignments.ToArray().Length + 1,
                     TraineeId = dto.TraineeId,
                     MentorId = dto.MentorId,
                     LearningTaskId = dto.LearningTaskId,
@@ -181,7 +160,6 @@ namespace TraineeManagement.Services
             catch (Exception ex)
             {
                 _logger.LogError(ex, "CreateTaskAssignment: error while creating task assignment.");
-                // throw new Exception($"Error while creating task assignment.", ex);
                 throw;
             }
 
@@ -213,7 +191,6 @@ namespace TraineeManagement.Services
             catch (Exception ex)
             {
                 _logger.LogError(ex, $"UpdateTaskAssignmentStatus: error while updating task assignment with id {id}.");
-                // throw new Exception($"Error while updating task assignment with id {id}.", ex);
                 throw;
             }
         }
@@ -238,7 +215,6 @@ namespace TraineeManagement.Services
             catch (Exception ex)
             {
                 _logger.LogError($"ReturnTaskAssignmentDTO: error converting review with id {t.Id} to DTO.");
-                // throw new Exception("Error while converting task assignment to DTO.", ex);
                 throw;
             }
         }

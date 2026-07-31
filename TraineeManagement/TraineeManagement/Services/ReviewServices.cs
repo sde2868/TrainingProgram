@@ -16,28 +16,10 @@ namespace TraineeManagement.Services
             {
                 _context = context;
                 _logger = logger;
-                // // seed data
-                // if (!_context.Reviews.Any())
-                // {
-                //     _context.Reviews.Add(new Review
-                //     {
-                //         Id = 1,
-                //         Title = "Zeus",
-                //         Description = "Learning",
-                //         ExpectedTechStack = ["C#", "Dotnet"],
-                //         Status = ReviewStatus.Draft,
-                //         DueDate = DateTime.UtcNow,
-                //         CreatedAt = DateTime.UtcNow,
-                //         UpdatedAt = DateTime.UtcNow
-                //     });
-
-                //     _context.SaveChanges();
-                // }
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error while seeding review data.");
-                // throw new Exception($"Error while seeding review data.", ex);
                 throw;
             }
         }
@@ -73,7 +55,6 @@ namespace TraineeManagement.Services
                     .Take(pageSize)
                     .Select(t => new ReviewDTO
                     {
-                        // id = t.id,
                         Feedback = t.Feedback,
                         Score = t.Score,
                         TaskSubmissionId = t.TaskSubmissionId,

@@ -75,7 +75,6 @@ public class SubmissionFileServices : ISubmissionFileService
         if (file.Length > _fileUploadSettings.MaxFileSizeBytes)
         {
             throw new FileTooLargeException($"Maximum allowed file size is {_fileUploadSettings.MaxFileSizeBytes / (1024 * 1024)} MB.");
-            // throw new ArgumentException("TEST");
         }
 
         string extension = Path.GetExtension(file.FileName).ToLowerInvariant();

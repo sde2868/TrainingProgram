@@ -11,7 +11,6 @@ builder.Services.AddDbContext<AppDbContext>(
                 builder.Configuration.GetConnectionString("DefaultConnection"))));
 
 // Add services to the container.
-// Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddControllers();
 builder.Services.AddHttpContextAccessor();
 
@@ -20,24 +19,7 @@ builder.Logging.AddSimpleConsole(options =>
     options.IncludeScopes = true;
 });
 
-// builder.Services.AddEndpointsApiExplorer();
-// builder.Services.AddSwaggerGen();
-
 var app = builder.Build();
-
-// app.MapGet(
-//     "/test-db",
-//     async (AppDbContext db) =>
-//     {
-//         var traineeCount =
-//             await db.Trainees.CountAsync();
-
-//         return Results.Ok(
-//             new
-//             {
-//                 Count = traineeCount
-//             });
-//     });
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())

@@ -1,41 +1,6 @@
 import { DataStore } from "../Data/DataStore";
 
 export class FormulaEngine {
-    // private parseCellReference(reference: string): { row: number, column: number } | null {
-    //     const match = reference.match(/^([A-Z]+)(\d+)$/);
-    //     if (!match) {
-    //         return null;
-    //     }
-    //     const [, letters, numbers] = match;
-    //     let column = 0;
-    //     for (const letter of letters) {
-    //         column = column * 26 + (letter.charCodeAt(0) - 64);
-    //     }
-    //     return {
-    //         row: Number(numbers) - 1,
-    //         column: column - 1
-    //     }
-    // }
-
-    // private getCellValue(reference: string, dataStore: DataStore): number | string {
-    //     const cell = this.parseCellReference(reference);
-    //     if (!cell) {
-    //         return "#REF!";
-    //     }
-    //     return dataStore.getCell(cell.row, cell.column) ?? "";
-    // }
-
-    // private toNumber(value: string | number): number | null {
-    //     if (value === "") {
-    //         return 0;
-    //     }
-    //     const number = Number(value);
-    //     if (Number.isNaN(number)) {
-    //         return null;
-    //     }
-    //     return number;
-    // }
-
     private columnLettersToIndex(letters: string): number {
         let column = 0;
         for (const letter of letters) {
@@ -179,19 +144,6 @@ export class FormulaEngine {
         }
         return max === -Infinity ? 0 : max;
     }
-    // private getRangeValues(range: string, dataStore: DataStore): (string | number)[] {
-    //     const bounds = this.parseRange(range);
-    //     if (!bounds) {
-    //         return [];
-    //     }
-    //     const values: (string | number)[] = [];
-    //     for (let row = bounds.startRow; row <= bounds.endRow; row++) {
-    //         for (let column = bounds.startColumn; column <= bounds.endColumn; column++) {
-    //             values.push(dataStore.getCell(row, column) ?? "");
-    //         }
-    //     }
-    //     return values;
-    // }
 
     private getCellValueFromReference(reference: string, dataStore: DataStore, visitedCells: Set<string>): string | number {
         const match = reference.trim().match(/^([A-Z]+)([0-9]+)$/i);

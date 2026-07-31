@@ -24,7 +24,6 @@ namespace TraineeManagement.Services
                 {
                     _context.Trainees.Add(new Trainee
                     {
-                        // id = 1,
                         FirstName = "Zeus",
                         LastName = "Learning",
                         Email = "zeuslearning@email.com",
@@ -40,7 +39,6 @@ namespace TraineeManagement.Services
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error while seeding trainee data.");
-                // throw new Exception($"Error while seeding trainee data.", ex);
                 throw;
             }
         }
@@ -61,7 +59,6 @@ namespace TraineeManagement.Services
                         t.FirstName.ToLower().Contains(search) ||
                         t.LastName.ToLower().Contains(search) ||
                         t.Status.ToString().ToLower().Contains(search) ||
-                        // t.TechStack.Any(ts => ts.ToLower().Contains(search)) ||
                         t.Email.ToLower().Contains(search));
                 }
 
@@ -101,7 +98,6 @@ namespace TraineeManagement.Services
             catch (Exception ex)
             {
                 _logger.LogError(ex, $"GetAllTrainees: error searching trainees with search {search}.");
-                // throw new Exception("Error searching trainees.", ex);
                 throw;
             }
         }
@@ -134,7 +130,6 @@ namespace TraineeManagement.Services
             catch (Exception ex)
             {
                 _logger.LogError(ex, $"GetTraineeById: error while fetching trainee with id {id}.");
-                // throw new Exception($"Error while feetching trainee with id {id}.", ex);
                 throw;
             }
 
@@ -147,7 +142,6 @@ namespace TraineeManagement.Services
                 _logger.LogInformation("CreateTrainee: creating new trainee.");
                 Trainee trainee = new Trainee
                 {
-                    // id = _context.Trainees.ToArray().Length == 0 ? 1 : _context.Trainees.ToArray().Length + 1,
                     FirstName = dto.FirstName,
                     LastName = dto.LastName,
                     Email = dto.Email,
@@ -171,7 +165,6 @@ namespace TraineeManagement.Services
             catch (Exception ex)
             {
                 _logger.LogError(ex, "CreateTrainee: error while creating trainee.");
-                // throw new Exception($"Error while creating trainee.", ex);
                 throw;
             }
 
@@ -212,7 +205,6 @@ namespace TraineeManagement.Services
             catch (Exception ex)
             {
                 _logger.LogError(ex, $"UpdateTrainee: error while updating trainee with id {id}.");
-                // throw new Exception($"Error while updating trainee with id {id}.", ex);
                 throw;
             }
 
@@ -245,7 +237,6 @@ namespace TraineeManagement.Services
             catch (Exception ex)
             {
                 _logger.LogError(ex, $"DeleteTraineeById: error while deleting trainee with id {id}.");
-                // throw new Exception($"Error while deleting trainee with id {id}.", ex);
                 throw;
             }
 
@@ -270,7 +261,6 @@ namespace TraineeManagement.Services
             catch (Exception ex)
             {
                 _logger.LogInformation($"ReturnTraineeDTO: converting trainee with id {tr.id} to DTO.");
-                // throw new Exception("Error while converting trainee to DTO.", ex);
                 throw;
             }
 

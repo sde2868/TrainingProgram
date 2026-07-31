@@ -49,7 +49,6 @@ namespace TraineeManagement.Middlewares
                     success = false,
                     statusCode = (int)statusCode,
                     message = GetMessage(ex),
-                    // Show detailed error only in development
                     details = _env.IsDevelopment() ? ex.ToString() : null
                 };
 
@@ -67,7 +66,6 @@ namespace TraineeManagement.Middlewares
                 KeyNotFoundException => HttpStatusCode.NotFound,
                 FileNotFoundException => HttpStatusCode.NotFound,
                 FileTooLargeException => HttpStatusCode.RequestEntityTooLarge, // 413
-                // InvalidOperationException => HttpStatusCode.BadRequest,
                 MessageQueueUnavailableException => HttpStatusCode.ServiceUnavailable,
                 MySqlException => HttpStatusCode.ServiceUnavailable,
                 DbUpdateException => HttpStatusCode.ServiceUnavailable,
@@ -82,7 +80,6 @@ namespace TraineeManagement.Middlewares
             return ex switch
             {
                 ArgumentException => ex.Message,
-                // InvalidOperationException => ex.Message,
                 UnauthorizedAccessException => "Unauthorized access.",
                 KeyNotFoundException => ex.Message,
                 FileNotFoundException => ex.Message,

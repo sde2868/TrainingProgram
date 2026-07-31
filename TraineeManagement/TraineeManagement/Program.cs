@@ -17,7 +17,6 @@ using System.Text;
 using Microsoft.OpenApi.Models;
 using StackExchange.Redis;
 
-// dotnet add package Swashbuckle.AspNetCore
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
@@ -25,8 +24,6 @@ builder.Services.AddControllers();
 
 builder.Services.AddEndpointsApiExplorer();
 
-// Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
-// builder.Services.AddOpenApi();
 builder.Services.AddSwaggerGen(options =>
 {
     options.CustomSchemaIds(type => type.FullName!.Replace("+", "."));
@@ -130,8 +127,6 @@ builder.Services.AddStackExchangeRedisCache(options =>
 
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseMySql(connectionString, ServerVersion.Parse("8.0.15")));
-// builder.Services.AddDbContext<AppDbContext>(opt =>
-//     opt.UseInMemoryDatabase("TraineeDb"));
 
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
@@ -172,18 +167,12 @@ var app = builder.Build();
 
 if (!app.Environment.IsDevelopment())
 {
-    // app.UseExceptionHandler("/Error"); // Use when separate /Error page is needed when rendering views
     app.UseHsts();
 }
 
-// Configure the HTTP request pipeline.
-// if (app.Environment.IsDevelopment())
-// {
-    // app.MapOpenApi();
-    app.UseDeveloperExceptionPage();
-    app.UseSwagger();
-    app.UseSwaggerUI();
-// }
+app.UseDeveloperExceptionPage();
+app.UseSwagger();
+app.UseSwaggerUI();
 
 app.UseMiddleware<ExceptionMiddleware>();
 

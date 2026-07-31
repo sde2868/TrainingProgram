@@ -20,7 +20,6 @@ namespace TraineeManagement.Services
                 {
                     _context.Mentors.Add(new Mentor
                     {
-                        // Id = 1,
                         FirstName = "Zeus",
                         LastName = "Learning",
                         Email = "mentor1@zeuslearning.com",
@@ -35,7 +34,6 @@ namespace TraineeManagement.Services
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error while seeding mentors.");
-                // throw new Exception($"Error while seeding mentor data.", ex);
                 throw;
             }
         }
@@ -95,7 +93,6 @@ namespace TraineeManagement.Services
             catch (Exception ex)
             {
                 _logger.LogError(ex, $"GetAllMentors: error while fetching mentors for search {search}.");
-                // throw new Exception($"Error while fetcing mentors.", ex);
                 throw;
             }
         }
@@ -118,7 +115,6 @@ namespace TraineeManagement.Services
             catch (Exception ex)
             {
                 _logger.LogError(ex, $"GetMentorById: error while fetching mentor with id {id}.");
-                // throw new Exception($"Error while fetching mentor wih id {id}.", ex);
                 throw;
             }
         }
@@ -130,7 +126,6 @@ namespace TraineeManagement.Services
                 _logger.LogInformation($"CreateMentor: creating mentor.");
                 Mentor mentor = new Mentor
                 {
-                    // Id = _context.Mentors.ToArray().Length == 0 ? 1 : _context.Mentors.ToArray().Length + 1,
                     FirstName = dto.FirstName,
                     LastName = dto.LastName,
                     Email = dto.Email,
@@ -148,7 +143,6 @@ namespace TraineeManagement.Services
             catch (Exception ex)
             {
                 _logger.LogError(ex, "CreateMentor: error while creating mentor.");
-                // throw new Exception($"Error while creating mentor.", ex);
                 throw;
             }
         }
@@ -176,7 +170,6 @@ namespace TraineeManagement.Services
             catch (Exception ex)
             {
                 _logger.LogError(ex, $"UpdateMentorById: error while updating mentor with id {id}.");
-                // throw new Exception($"Error updating mentor with id {id}.", ex);
                 throw;
             }
         }
@@ -198,7 +191,6 @@ namespace TraineeManagement.Services
             catch (Exception ex)
             {
                 _logger.LogError(ex, $"DeleteMentor: error while deleting mentor with id {id}.");
-                // throw new Exception($"Error deleting mentor with id {id}.", ex);
                 throw;
             }
         }
@@ -221,7 +213,6 @@ namespace TraineeManagement.Services
             catch (Exception ex)
             {
                 _logger.LogError(ex, $"ReturnMentorDTO: error while converting mentor with id {mentor.Id} to DTO");
-                // throw new Exception("Error while converting mentor to DTO.", ex);
                 throw;
             }
         }
